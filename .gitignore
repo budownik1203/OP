@@ -1,0 +1,5 @@
+.godot/
+*.import.tmp
+/zrzuty/
+*.blend1
+__pycache__/
