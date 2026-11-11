@@ -1,5 +1,33 @@
 # Lista zmian
 
+## Build 6b — Wrogowie: modele, animacje, nowe gatunki (2026-11-11)
+
+Druga z trzech części wersji 0.1.
+
+**Poprawione modele i animacje dotychczasowych wrogów**
+- Ciała nie są już składane z klocków: kończyny i tułów to ciągłe bryły z zarysem mięśni, osobne dłonie z palcami i stopy.
+- Chód przepisany: kolano zgina się w nodze przenoszonej, stopa przetacza się od pięty, miednica i barki pracują naprzeciw siebie, ręce chodzą na przemian z nogami.
+- Atak ma trzy etapy: zamach z cofnięciem ciężaru, cios z wykrokiem, wyprowadzenie.
+- Trafiony wróg wzdryga się w stronę, w którą pchnął go pocisk.
+- Śmierć: najpierw puszczają kolana, potem ciało przewraca się z przyspieszeniem na plecy, na twarz albo na bok, broń wypada z ręki.
+
+**Nowi wrogowie**
+- Warg: szybki czworonóg, zachodzi z boku, ranny ucieka i wraca.
+- Kaznodzieja: słaby w walce, ale jego litania przyspiesza Przebudzenie i wprawia potwory w szał. Warto zabić go pierwszego.
+- Straż Zakonu (żywi ludzie): włócznik z tarczą, kusznik strzelający bełtami, komtur w płytach. Walczą z potworami. Pierwszy wystrzał, jaki słyszą, rozprasza ich, jeśli w pobliżu nie ma komtura.
+- Troll jaskiniowy: skóra klasy 3, czaszka klasy 5, rany zarastają. Zarastanie zatrzymuje na 12 sekund tylko 7,62×51 albo 12/70.
+- Wszyscy są rozmieszczeni w kopalni i dochodzą przy progach Przebudzenia.
+
+**Narzędzia**
+- `--swiat=kopalnia --test-wrogowie` sprawdza zachowania nowych wrogów, `--zrzut-animacje=KATALOG` robi klatki chodu, biegu, ataku i upadków.
+
+**Znane braki**
+- Wrogowie nadal składają się ze sztywnych segmentów, więc w łokciach i kolanach widać łączenia.
+- Troll ma ramiona zbyt blisko tułowia, warg ma za wąski łeb. Do poprawy po ocenie właściciela.
+- Etapy upadku sprawdziłem tylko na klatkach końcowych; płynność ruchu wymaga oceny w grze.
+- Nowe dźwięki (warkot, ryk trolla, litania, kusza) są z syntezy i nie zostały odsłuchane.
+- Liczby (zdrowie, obrażenia, szansa ucieczki Zakonu 70%) ustawione na wyczucie.
+
 ## Build 6a2 — Optyka i czucie broni (2026-11-11)
 
 Na prośbę właściciela: celowniki jak w Tarkovie zamiast przybliżania całego ekranu.

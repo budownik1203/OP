@@ -22,8 +22,18 @@ def lustro(p, strona):
     return (p[0] * strona, p[1], p[2])
 
 
+def rura(s, pierscienie, m, boki=8, gora=(0, 1, 0)):
+    """Łańcuch segmentów przez kolejne przekroje (punkt, szerokość, głębokość)."""
+    s.rura(pierscienie, m, gora=gora, boki=boki)
+
+
+def miedzy(a, b, t, dy=0.0):
+    return (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t + dy, a[2] + (b[2] - a[2]) * t)
+
+
 def buduj(nazwa, m, cechy):
-    """m: słownik materiałów; cechy: funkcje dokładające elementy wariantu."""
+    """m: słownik materiałów; cechy: funkcje dokładające elementy wariantu.
+    Segmenty: miednica > tors > (glowa, ramie > przedramie > dlon), miednica > udo > golen > stopa."""
     w.reset()
     mat = m()
     lista = list(mat.values())
@@ -34,33 +44,38 @@ def buduj(nazwa, m, cechy):
     c_tors = mat.get("tors", ubranie)
     c_reka = mat.get("reka", ubranie)
     c_noga = mat.get("noga", ubranie)
+    c_dlon = mat.get("dlon", skora)
     seg = {}
 
-    # miednica
+    # miednica: szersza w biodrach, zwężona ku talii, z zarysem pośladków
     s = w.Siatka("miednica", lista)
-    s.segment((0, 0, 0.90), (0, 0, 1.065), 0.315 * g, 0.215 * g, 0.29 * g, 0.205 * g, mat.get("biodra", ubranie), gora=(0, 1, 0), boki=8)
+    cb = mat.get("biodra", ubranie)
+    rura(s, [((0, -0.004, 0.885), 0.250 * g, 0.170 * g), ((0, -0.008, 0.945), 0.325 * g, 0.225 * g),
+             ((0, -0.004, 1.010), 0.315 * g, 0.215 * g), ((0, 0, 1.068), 0.285 * g, 0.200 * g)], cb)
     cechy.get("miednica", lambda *_: None)(s, mat)
     seg["miednica"] = s.obiekt(faza=0.003, gestosc=320, rodzic=korzen, poczatek=MIEDNICA)
 
-    # tors: brzuch i klatka
+    # tors: talia, żebra, klatka, obręcz barkowa, kaptur do szyi
     s = w.Siatka("tors", lista)
     talia = cechy.get("talia", 0.275)
-    s.segment((0, 0, 1.05), (0, 0.004, 1.235), talia, 0.205 * g, 0.335 * g, 0.235 * g, c_tors, gora=(0, 1, 0), boki=8)
-    s.segment((0, 0.004, 1.235), (0, 0.0, 1.465), 0.335 * g, 0.235 * g, 0.375 * g, 0.250 * g, c_tors, gora=(0, 1, 0), boki=8)
-    s.segment((0, 0.0, 1.465), (0, 0.004, 1.515), 0.31 * g, 0.20 * g, 0.115, 0.11, c_tors, gora=(0, 1, 0), boki=8)   # barki do szyi
+    rura(s, [((0, 0, 1.050), talia, 0.195 * g), ((0, 0.002, 1.150), talia * 1.08, 0.205 * g),
+             ((0, 0.008, 1.255), 0.335 * g, 0.240 * g), ((0, 0.010, 1.365), 0.372 * g, 0.258 * g),
+             ((0, 0.002, 1.440), 0.368 * g, 0.235 * g), ((0, -0.004, 1.478), 0.300 * g, 0.190 * g),
+             ((0, 0.000, 1.518), 0.125, 0.120)], c_tors)
     cechy.get("tors", lambda *_: None)(s, mat)
     seg["tors"] = s.obiekt(faza=0.003, gestosc=320, rodzic=seg["miednica"], poczatek=PAS)
 
     # głowa
     s = w.Siatka("glowa", lista)
     if not cechy.get("helm_pelny", False):
-        s.segment((0, 0.0, 1.49), (0, 0.008, 1.565), 0.105, 0.105, 0.10, 0.105, skora, gora=(0, 1, 0), boki=6)   # szyja
-        s.segment((0, 0.018, 1.555), (0, 0.022, 1.645), 0.118, 0.150, 0.150, 0.185, skora, gora=(0, 1, 0), boki=8)   # żuchwa
-        s.segment((0, 0.022, 1.645), (0, 0.010, 1.745), 0.150, 0.185, 0.152, 0.195, skora, gora=(0, 1, 0), boki=8)   # twarz
-        s.segment((0, 0.010, 1.745), (0, 0.004, 1.800), 0.152, 0.195, 0.105, 0.135, skora, gora=(0, 1, 0), boki=8)   # sklepienie
+        rura(s, [((0, 0.000, 1.490), 0.108, 0.112), ((0, 0.008, 1.565), 0.100, 0.108)], skora, boki=8)                   # szyja
+        rura(s, [((0, 0.030, 1.548), 0.085, 0.120), ((0, 0.022, 1.585), 0.128, 0.165), ((0, 0.022, 1.645), 0.150, 0.186),
+                 ((0, 0.014, 1.705), 0.154, 0.198), ((0, 0.008, 1.760), 0.150, 0.192), ((0, 0.004, 1.800), 0.108, 0.140)], skora)
+        s.segment((0, 0.104, 1.722), (0, 0.108, 1.700), 0.118, 0.014, 0.110, 0.012, skora, gora=(0, 1, 0))           # łuk brwiowy
         s.segment((0, 0.108, 1.705), (0, 0.128, 1.655), 0.022, 0.016, 0.034, 0.020, skora, gora=(0, 1, 0))           # nos
-        for sx in (-1, 1):                                                                                            # oczodoły
-            s.pudlo((sx * 0.020, 0.085, 1.694), (sx * 0.046, 0.1045, 1.714), mat["ciemny"])
+        for sx in (-1, 1):
+            s.pudlo((sx * 0.020, 0.085, 1.690), (sx * 0.046, 0.1035, 1.708), mat["ciemny"])                           # oczodoły
+            s.segment((sx * 0.077, 0.018, 1.665), (sx * 0.082, 0.010, 1.712), 0.012, 0.030, 0.010, 0.034, skora, gora=(0, 1, 0))   # uszy
     cechy.get("glowa", lambda *_: None)(s, mat)
     seg["glowa"] = s.obiekt(faza=0.003, gestosc=320, rodzic=seg["tors"], poczatek=SZYJA)
 
@@ -68,36 +83,60 @@ def buduj(nazwa, m, cechy):
         bark, lokiec = lustro(BARK, strona), lustro(LOKIEC, strona)
         nadg = lustro(NADGARSTEK, strona)
         nadg = (nadg[0], nadg[1] + dl_przedr * 0.1, nadg[2] - dl_przedr)
-        # ramię
+        # ramię: mięsień naramienny, dwugłowy, zwężenie do łokcia
         s = w.Siatka("ramie_" + lit, lista)
-        s.segment((bark[0], bark[1], bark[2] + 0.035), lokiec, 0.118 * g, 0.126 * g, 0.092 * g, 0.098 * g, c_reka, gora=(0, 1, 0), boki=6)
-        s.segment((strona * 0.145, 0.0, 1.452), (bark[0] + strona * 0.028, 0.0, 1.425), 0.125 * g, 0.115 * g, 0.118 * g, 0.105 * g, c_reka, gora=(0, 1, 0), boki=6)   # mięsień naramienny
+        s.segment((strona * 0.150, 0.0, 1.455), (bark[0] + strona * 0.030, 0.0, 1.420), 0.128 * g, 0.122 * g, 0.122 * g, 0.112 * g, c_reka, gora=(0, 1, 0), boki=8)
+        rura(s, [((bark[0], bark[1], bark[2] + 0.040), 0.124 * g, 0.132 * g), (miedzy(bark, lokiec, 0.38, 0.006), 0.122 * g, 0.134 * g),
+                 (miedzy(bark, lokiec, 0.80), 0.102 * g, 0.110 * g), (lokiec, 0.096 * g, 0.102 * g)], c_reka)
         cechy.get("ramie", lambda *_: None)(s, mat, strona)
         seg["ramie_" + lit] = s.obiekt(faza=0.003, gestosc=320, rodzic=seg["tors"], poczatek=bark)
-        # przedramię z dłonią
+        # przedramię: brzusiec pod łokciem, wąski nadgarstek
         s = w.Siatka("przedramie_" + lit, lista)
-        s.segment((lokiec[0], lokiec[1], lokiec[2] + 0.02), nadg, 0.092 * g, 0.098 * g, 0.064 * g, 0.068 * g, mat.get("przedramie", c_reka), gora=(0, 1, 0), boki=6)
-        dlon_kon = (nadg[0] + strona * 0.004, nadg[1] + 0.012, nadg[2] - 0.105)
-        s.segment(nadg, dlon_kon, 0.040, 0.085, 0.030, 0.072, mat.get("dlon", skora), gora=(0, 1, 0))
-        s.segment((nadg[0] - strona * 0.012, nadg[1] + 0.035, nadg[2] - 0.02), (nadg[0] - strona * 0.016, nadg[1] + 0.058, nadg[2] - 0.075), 0.020, 0.022, 0.016, 0.018, mat.get("dlon", skora), gora=(0, 1, 0))  # kciuk
-        cechy.get("przedramie_el", lambda *_: None)(s, mat, strona, nadg, dlon_kon)
+        c_prz = mat.get("przedramie", c_reka)
+        rura(s, [((lokiec[0], lokiec[1], lokiec[2] + 0.022), 0.096 * g, 0.102 * g), (miedzy(lokiec, nadg, 0.28, 0.004), 0.102 * g, 0.110 * g),
+                 (miedzy(lokiec, nadg, 0.70), 0.082 * g, 0.086 * g), (nadg, 0.064 * g, 0.068 * g)], c_prz)
         ob = s.obiekt(faza=0.003, gestosc=320, rodzic=seg["ramie_" + lit], poczatek=lokiec)
         seg["przedramie_" + lit] = ob
-        # punkt chwytu: środek dłoni
-        w.pusty("chwyt_" + lit, (nadg[0], nadg[1] + 0.02, nadg[2] - 0.07), ob)
+        # dłoń: śródręcze, lekko zgięte palce, kciuk
+        s = w.Siatka("dlon_" + lit, lista)
+        knykcie = (nadg[0] + strona * 0.003, nadg[1] + 0.010, nadg[2] - 0.092)
+        dlon_kon = (nadg[0] + strona * 0.002, nadg[1] + 0.034, nadg[2] - 0.170)
+        s.segment(nadg, knykcie, 0.034, 0.066, 0.030, 0.086, c_dlon, gora=(0, 1, 0))
+        for i in range(4):
+            y = -0.031 + i * 0.0205
+            dlg = (0.070, 0.080, 0.076, 0.060)[i]
+            p0 = (knykcie[0], knykcie[1] + y, knykcie[2])
+            p1 = (knykcie[0] - strona * 0.004, knykcie[1] + y + 0.004, knykcie[2] - dlg * 0.55)
+            p2 = (knykcie[0] - strona * 0.016, knykcie[1] + y + 0.006, knykcie[2] - dlg)
+            s.segment(p0, p1, 0.019, 0.0185, 0.017, 0.017, c_dlon, gora=(0, 1, 0))
+            s.segment(p1, p2, 0.017, 0.017, 0.014, 0.014, c_dlon, gora=(0, 1, 0))
+        s.segment((nadg[0] - strona * 0.010, nadg[1] + 0.034, nadg[2] - 0.022), (nadg[0] - strona * 0.020, nadg[1] + 0.058, nadg[2] - 0.062), 0.024, 0.026, 0.020, 0.021, c_dlon, gora=(0, 1, 0))
+        s.segment((nadg[0] - strona * 0.020, nadg[1] + 0.058, nadg[2] - 0.062), (nadg[0] - strona * 0.024, nadg[1] + 0.066, nadg[2] - 0.100), 0.019, 0.020, 0.015, 0.016, c_dlon, gora=(0, 1, 0))
+        cechy.get("przedramie_el", lambda *_: None)(s, mat, strona, nadg, dlon_kon)
+        seg["dlon_" + lit] = s.obiekt(faza=0.002, gestosc=320, rodzic=ob, poczatek=nadg)
+        w.pusty("chwyt_" + lit, (nadg[0], nadg[1] + 0.02, nadg[2] - 0.07), seg["dlon_" + lit])
 
         biodro, kolano, kostka = lustro(BIODRO, strona), lustro(KOLANO, strona), lustro(KOSTKA, strona)
+        # udo: masa z przodu i z boku, zwężenie nad kolanem, rzepka
         s = w.Siatka("udo_" + lit, lista)
-        s.segment((biodro[0], biodro[1], biodro[2] + 0.02), kolano, 0.178 * g, 0.190 * g, 0.122 * g, 0.130 * g, c_noga, gora=(0, 1, 0), boki=6)
+        rura(s, [((biodro[0], biodro[1], biodro[2] + 0.030), 0.186 * g, 0.200 * g), (miedzy(biodro, kolano, 0.30, 0.008), 0.188 * g, 0.206 * g),
+                 (miedzy(biodro, kolano, 0.78, 0.004), 0.146 * g, 0.156 * g), (kolano, 0.128 * g, 0.136 * g)], c_noga)
+        s.segment((kolano[0], kolano[1] + 0.050 * g, kolano[2] + 0.030), (kolano[0], kolano[1] + 0.054 * g, kolano[2] - 0.020), 0.070 * g, 0.030, 0.062 * g, 0.026, c_noga, gora=(0, 1, 0), boki=6)
         cechy.get("udo", lambda *_: None)(s, mat, strona)
         seg["udo_" + lit] = s.obiekt(faza=0.003, gestosc=320, rodzic=seg["miednica"], poczatek=biodro)
+        # goleń: łydka wysunięta do tyłu, wąska kostka
         s = w.Siatka("golen_" + lit, lista)
-        s.segment((kolano[0], kolano[1], kolano[2] + 0.02), (kolano[0], kolano[1] - 0.012, kolano[2] - 0.14), 0.118 * g, 0.126 * g, 0.120 * g, 0.136 * g, mat.get("golen", c_noga), gora=(0, 1, 0), boki=6)
-        s.segment((kolano[0], kolano[1] - 0.012, kolano[2] - 0.14), kostka, 0.120 * g, 0.136 * g, 0.078 * g, 0.088 * g, mat.get("golen", c_noga), gora=(0, 1, 0), boki=6)
-        but = mat.get("but", mat.get("golen", c_noga))
-        s.profil([(-0.070, 0.0), (0.165, 0.0), (0.178, 0.022), (0.050, 0.078), (-0.052, 0.090), (-0.080, 0.040)], "x", kostka[0] - 0.046, kostka[0] + 0.046, but)
+        c_gol = mat.get("golen", c_noga)
+        rura(s, [((kolano[0], kolano[1], kolano[2] + 0.022), 0.124 * g, 0.132 * g), (miedzy(kolano, kostka, 0.28, -0.016), 0.130 * g, 0.148 * g),
+                 (miedzy(kolano, kostka, 0.72, -0.004), 0.096 * g, 0.106 * g), ((kostka[0], kostka[1], kostka[2] + 0.010), 0.082 * g, 0.092 * g)], c_gol)
         cechy.get("golen_el", lambda *_: None)(s, mat, strona, kolano, kostka)
         seg["golen_" + lit] = s.obiekt(faza=0.003, gestosc=320, rodzic=seg["udo_" + lit], poczatek=kolano)
+        # stopa: pięta, podbicie, palce
+        s = w.Siatka("stopa_" + lit, lista)
+        but = mat.get("but", c_gol)
+        s.profil([(-0.072, 0.0), (0.150, 0.0), (0.182, 0.010), (0.176, 0.034), (0.090, 0.066), (0.040, 0.094), (-0.050, 0.098), (-0.082, 0.046)], "x", kostka[0] - 0.050, kostka[0] + 0.050, but)
+        s.pudlo((kostka[0] - 0.053, -0.078, 0.0), (kostka[0] + 0.053, 0.180, 0.012), mat.get("podeszwa", but))
+        seg["stopa_" + lit] = s.obiekt(faza=0.003, gestosc=320, rodzic=seg["golen_" + lit], poczatek=kostka)
 
     cechy.get("dodatki", lambda *_: None)(seg, mat, lista)
     w.eksport(nazwa)
@@ -141,7 +180,7 @@ def ghul_glowa(s, m):
 def ghul_dlon(s, m, strona, nadg, kon):
     for i in range(3):                                                            # szpony
         y = kon[1] - 0.028 + i * 0.028
-        s.segment((kon[0], y, kon[2] + 0.01), (kon[0] + strona * 0.006, y + 0.012, kon[2] - 0.075), 0.016, 0.016, 0.004, 0.004, m["kosc"], gora=(0, 1, 0))
+        s.segment((kon[0] - strona * 0.012, y, kon[2] + 0.012), (kon[0] - strona * 0.030, y + 0.010, kon[2] - 0.050), 0.014, 0.014, 0.004, 0.004, m["kosc"], gora=(0, 1, 0))
     s.pudlo((nadg[0] - 0.024, nadg[1] - 0.03, nadg[2] - 0.06), (nadg[0] + 0.024, nadg[1] + 0.05, nadg[2] - 0.02), m["krew"])
 
 

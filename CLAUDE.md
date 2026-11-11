@@ -25,7 +25,8 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
 - Pluton, zadania w bazie i dodatki do broni są w `skrypty/auto/ekwipunek.gd` (sekcje „pluton” i „dodatki do broni”); panele w `skrypty/ui/hud.gd`.
 - `skrypty/rzemioslo.gd` — receptury pieca i stołu rusznikarskiego; surowce to przedmioty ze stosem (`dane.ile`).
 - `narzedzia/blender/bron_rodzina.py` — pozostała broń; dłonie z `rece.py` (`prawa_karabin`, `lewa_loze`, `prawa_pistolet`, `lewa_pistolet`).
-- `narzedzia/blender/postacie.py` — wspólny szkielet człowieka i warianty wrogów.
+- `narzedzia/blender/postacie.py` — wspólny szkielet człowieka i warianty wrogów; `postacie2.py` — kaznodzieja, Straż Zakonu, troll, warg.
+- `skrypty/wrogowie/wrog.gd` — tabela `TYPY` (statystyki, frakcja, styl animacji), `belt.gd` — bełt kusznika.
 - `skrypty/auto/` — autoloady: `Jezyk`, `Wejscie`, `Strojenie`, `Amunicja`, `Dzwiek`, `Ekwipunek` (stan żołnierza między lokacjami).
 - `skrypty/ekwipunek/` — siatka (`Pojemnik`), przedmioty leżące, skrzynie; `skrypty/ui/ekwipunek_ui.gd` — ekran ekwipunku.
 - Zapis: `user://baza.sav` (stan bazy i żołnierza) i `user://biwak.sav` (zawieszona wyprawa, kasowany przy wczytaniu); testy uruchamiane z `--test…`/`--zrzut…` nie zapisują.
@@ -54,4 +55,6 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
    `godot --headless -- --test-rzemioslo` — każda broń, strzelba, receptury, żyły, oprawianie, łuski.
    `xvfb-run godot --rendering-driver opengl3 -- --zrzut-bron=KATALOG` — każda broń z biodra, w celowaniu i przy strzale.
    `godot --headless -- --swiat=kopalnia --test-loch` — wrogowie, strefy, rozczłonkowanie, ciosy, leki, śmierć.
+   `godot --headless -- --swiat=kopalnia --test-wrogowie` — warg, troll, morale Zakonu, kusza, litania, walka frakcji.
+   `xvfb-run godot --rendering-driver opengl3 -- --swiat=kopalnia --zrzut-animacje=KATALOG` — klatki animacji wrogów do obejrzenia.
 4. `narzedzia/zrzuty.sh` i obejrzenie zrzutów; nowe modele dodatkowo przez `narzedzia/podglad.sh`.

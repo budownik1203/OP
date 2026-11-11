@@ -158,6 +158,8 @@ const TEKSTY := {
 	"BIWAK_ZAPISZ": ["Zapisz i zakończ grę", "Save and quit"],
 	"BIWAK_ODPOCZNIJ": ["Odpocznij przy ogniu", "Rest by the fire"],
 	"BIWAK_WCZYTANO": ["Wyprawa wznowiona przy biwaku", "Expedition resumed at the bivouac"],
+	"KAZANIE": ["Ktoś intonuje litanię. Loch słucha.", "Someone is chanting a litany. The dungeon listens."],
+	"E_BELT": ["Bełt", "Bolt"],
 	"BUDZI_1": ["Coś się poruszyło w głębi", "Something stirs below"],
 	"BUDZI_2": ["Loch się budzi. Stary chodnik się zawalił.", "The dungeon is waking. The old gallery has collapsed."],
 	"BUDZI_3": ["Słychać kroki w zbroi", "Armoured footsteps echo"],

@@ -28,6 +28,12 @@ func _ready() -> void:
 			set_process(false)
 			_zrzuty_dodatkow.call_deferred()
 			return
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--zrzut-animacje="):
+			_katalog = a.trim_prefix("--zrzut-animacje=")
+			set_process(false)
+			_zrzuty_animacji.call_deferred()
+			return
 	if "--test-pluton" in OS.get_cmdline_user_args():
 		set_process(false)
 		_test_pluton.call_deferred()
@@ -43,6 +49,10 @@ func _ready() -> void:
 	if "--test-ekwipunek" in OS.get_cmdline_user_args():
 		set_process(false)
 		_test_ekwipunek.call_deferred()
+		return
+	if "--test-wrogowie" in OS.get_cmdline_user_args():
+		set_process(false)
+		_test_wrogowie.call_deferred()
 		return
 	if "--test-loch" in OS.get_cmdline_user_args():
 		set_process(false)
@@ -912,4 +922,233 @@ func _test_pluton() -> void:
 	E.nowa_kampania()
 	print("nowa kampania: żywi ", E.zywi(), ", skrytka ", E.skrytka.rzeczy.size(), ", idzie ", E.zolnierz()["imie"])
 	print("TEST PLUTONU ZAKOŃCZONY")
+	get_tree().quit()
+
+
+## Klatki animacji wrogów do kontroli jakości: chód z profilu, bieg, atak w trzech etapach, upadki.
+## Uruchamiać z --swiat=kopalnia; opcjonalnie --typy=ghul,knecht.
+func _zrzuty_animacji() -> void:
+	DirAccess.make_dir_recursive_absolute(_katalog)
+	await _klatki(30)
+	var gra := get_parent()
+	var swiat: Kopalnia = gra.swiat
+	var g := swiat.gracz
+	g.sterowanie = false
+	for w in swiat.wrogowie.duplicate():
+		w.queue_free()
+	swiat.wrogowie.clear()
+	for b in swiat.bronie:
+		b.visible = false
+	var typy := ["ghul", "knecht", "rycerz"]
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--typy="):
+			typy = Array(a.trim_prefix("--typy=").split(","))
+	var miejsce := g.global_position + Vector3(3.6, 0, 0.0)
+	var lampa := OmniLight3D.new()
+	lampa.omni_range = 9.0
+	lampa.light_energy = 2.2
+	swiat.add_child(lampa)
+	lampa.global_position = g.global_position + Vector3(1.2, 1.9, 0.6)
+	for typ in typy:
+		var d: Dictionary = Wrog.TYPY[typ]
+		# chód i bieg z profilu
+		for tryb in ["chod", "bieg"]:
+			var w := swiat.dodaj_wroga(typ, miejsce, 0.0)
+			w.set_physics_process(false)
+			w.stan = "goni" if tryb == "bieg" else "szuka"
+			w.velocity = Vector3(0, 0, -float(d[tryb]))
+			await _klatki(20)
+			for i in 6:
+				w.set("_faza", PI * 2.0 * i / 6.0)
+				await _klatki(1)
+				w.velocity = Vector3.ZERO
+				var faza: float = w.get("_faza")
+				for k in 10:
+					w.set("_faza", faza)
+					w.velocity = Vector3(0, 0, -float(d[tryb]))
+					await _klatki(1)
+				await _zapisz("%s_%s_%d" % [typ, tryb, i])
+			w.queue_free()
+			swiat.wrogowie.erase(w)
+			await _klatki(3)
+		# atak: zamach, cios, wyprowadzenie (z ukosa)
+		var wa := swiat.dodaj_wroga(typ, miejsce, PI * 0.28)
+		wa.set_physics_process(false)
+		wa.stan = "atak"
+		var zam: float = d["zamach"]
+		var czasy := [zam * 0.9, zam + 0.10, zam + 0.45]
+		for i in 3:
+			for k in 30:
+				wa.set("_t_stan", czasy[i])
+				await _klatki(1)
+			await _zapisz("%s_atak_%d" % [typ, i])
+		# stany szczególne: litania, celowanie z kuszy, napinanie
+		var dodatkowe := []
+		if d.get("kaznodzieja", false):
+			dodatkowe.append("kazanie")
+		if d.has("strzela"):
+			dodatkowe.append_array(["celuje", "laduje"])
+		for st in dodatkowe:
+			wa.stan = st
+			for k in 30:
+				wa.set("_t_stan", 0.6)
+				await _klatki(1)
+			await _zapisz("%s_stan_%s" % [typ, st])
+		wa.queue_free()
+		swiat.wrogowie.erase(wa)
+		# wzdrygnięcie i trzy upadki
+		var kierunki := [Vector3(1, 0, 0), Vector3(-1, 0, 0), Vector3(0, 0, 1)]
+		for i in 3:
+			var wu := swiat.dodaj_wroga(typ, miejsce, PI * 0.5 if i < 2 else PI * 0.5)
+			wu.rotation.y = [PI * 0.25, PI * 0.25, PI * 0.5][i]
+			wu.set_physics_process(false)
+			await _klatki(15)
+			var lok: Vector3 = wu.global_transform.basis * ([Vector3(0, 0, 1), Vector3(0, 0, -1), Vector3(1, 0, 0.2)][i] as Vector3)
+			if i == 0:
+				wu.set("_wstrzas", Vector3(0.42, 0.34, -0.1))
+				await _klatki(5)
+				await _zapisz("%s_wstrzas" % typ)
+			seed(7 + i)
+			wu.call("_umrzyj", lok.normalized())
+			await _klatki(14)
+			await _zapisz("%s_upadek%d_a" % [typ, i])
+			await _klatki(14)
+			await _zapisz("%s_upadek%d_b" % [typ, i])
+			await _klatki(60)
+			await _zapisz("%s_upadek%d_c" % [typ, i])
+			if OS.has_environment("DIAG"):
+				var sm: Dictionary = wu.get("_smierc")
+				var mm: Node3D = wu.get("_model")
+				print(typ, i, " bok=", sm["bok"], " kier=", sm["kier"], " model=", mm.rotation, " rl=", (wu.get("_w")["ramie_l"] as Node3D).rotation, " rp=", (wu.get("_w")["ramie_p"] as Node3D).rotation, " tors=", (wu.get("_w")["tors"] as Node3D).rotation, " pl=", (wu.get("_w")["przedramie_l"] as Node3D).rotation)
+			wu.queue_free()
+			swiat.wrogowie.erase(wu)
+			await _klatki(3)
+	print("ZRZUTY ANIMACJI ZAPISANE")
+	get_tree().quit()
+
+
+func _odczekaj(sek: float) -> void:
+	await get_tree().create_timer(sek).timeout
+
+
+func _sprzataj(swiat: Kopalnia) -> void:
+	for w in swiat.wrogowie.duplicate():
+		if is_instance_valid(w):
+			w.queue_free()
+	swiat.wrogowie.clear()
+	await _odczekaj(0.2)
+
+
+## Nowi wrogowie z builda 6b: ucieczka warga, regeneracja trolla, morale Zakonu, kusza, litania, walka frakcji.
+func _test_wrogowie() -> void:
+	var gra := get_parent()
+	var swiat: Kopalnia = gra.swiat
+	var g := swiat.gracz
+	g.sterowanie = false
+	var typy := {}
+	for w in swiat.wrogowie:
+		typy[w.typ] = int(typy.get(w.typ, 0)) + 1
+	print("wrogowie na mapie: ", typy)
+	await _sprzataj(swiat)
+	var przed := g.global_position + Vector3(6.0, 0, 0)
+	# warg: dwa trafienia w tułów i ucieczka
+	var wa := swiat.dodaj_wroga("warg", przed, 0.0)
+	wa.set_physics_process(false)
+	await _odczekaj(0.3)
+	wa.stan = "goni"
+	_strzel_w(swiat, wa, "tulow", "A_556_FMJ")
+	await _odczekaj(0.2)
+	_strzel_w(swiat, wa, "tulow", "A_556_FMJ")
+	await _odczekaj(0.3)
+	print("warg po 2× 5,56 w tułów: hp=", _hp(wa, "tulow"), " stan=", wa.stan, " żyje=", wa.zyje)
+	wa.set_physics_process(true)
+	await _odczekaj(1.5)
+	print("warg po 1,5 s ucieczki: odległość od gracza ", snappedf(wa.global_position.distance_to(g.global_position), 0.1), " m (było 6)")
+	_strzel_w(swiat, wa, "glowa", "A_556_FMJ")
+	await _sprzataj(swiat)
+	# troll: skóra klasy 3, regeneracja, ciężki kaliber
+	var tr_ := swiat.dodaj_wroga("troll", przed, PI * 0.5)
+	tr_.set_physics_process(false)
+	await _odczekaj(0.3)
+	_strzel_w(swiat, tr_, "tors", "A_9_FMJ")
+	await _odczekaj(0.2)
+	print("troll: 9 mm FMJ w tors: ", _hp(tr_, "tors"), " / 420")
+	for i in 4:
+		_strzel_w(swiat, tr_, "tors", "A_556_AP")
+		await _odczekaj(0.15)
+	var po := _hp(tr_, "tors")
+	await _odczekaj(3.0)
+	print("troll: 4× 5,56 AP -> ", po, ", po 3 s regeneracji -> ", _hp(tr_, "tors"))
+	tr_.set_physics_process(false)
+	tr_.rotation.y = PI * 0.5
+	await _odczekaj(0.1)
+	_strzel_w(swiat, tr_, "tors", "A_76251_AP")
+	await _odczekaj(0.2)
+	var po2 := _hp(tr_, "tors")
+	await _odczekaj(3.0)
+	print("troll: 7,62×51 AP -> ", po2, ", po 3 s -> ", _hp(tr_, "tors"), " (rany nie zarastają)")
+	_strzel_w(swiat, tr_, "glowa", "A_556_FMJ")
+	await _odczekaj(0.2)
+	print("troll: 5,56 FMJ w czaszkę klasy 5: ", _hp(tr_, "glowa"), " / 90")
+	await _sprzataj(swiat)
+	# morale Zakonu: huk bez dowódcy i z dowódcą
+	var ucieklo := 0
+	for i in 20:
+		var z := swiat.dodaj_wroga("wlocznik", przed + Vector3(0, 0, 0), 0.0)
+		z.set_physics_process(false)
+		z.uslyszal(g.global_position, 55.0)
+		if z.stan == "ucieka":
+			ucieklo += 1
+	print("Zakon bez dowódcy: po pierwszym wystrzale ucieka ", ucieklo, " z 20")
+	await _sprzataj(swiat)
+	swiat.dodaj_wroga("komtur", przed + Vector3(1, 0, 0), 0.0).set_physics_process(false)
+	ucieklo = 0
+	for i in 20:
+		var z := swiat.dodaj_wroga("wlocznik", przed, 0.0)
+		z.set_physics_process(false)
+		z.uslyszal(g.global_position, 55.0)
+		if z.stan == "ucieka":
+			ucieklo += 1
+	print("Zakon z komturem: ucieka ", ucieklo, " z 20")
+	await _sprzataj(swiat)
+	# kusznik: celuje, strzela, ładuje
+	var ku := swiat.dodaj_wroga("kusznik", g.global_position + Vector3(9.0, 0, 0), PI * 0.5)
+	ku.set("_poznal_huk", true)
+	g.latarka = true
+	var hp0: float = 0.0
+	for k in g.zdrowie.hp:
+		hp0 += float(g.zdrowie.hp[k])
+	var stany := []
+	var beltow := 0
+	for i in 60:
+		await _odczekaj(0.1)
+		if stany.is_empty() or stany[-1] != ku.stan:
+			stany.append(ku.stan)
+		for c in swiat.get_children():
+			if c is Belt:
+				beltow = 1
+	var hp1: float = 0.0
+	for k in g.zdrowie.hp:
+		hp1 += float(g.zdrowie.hp[k])
+	print("kusznik z 9 m: stany ", stany, " bełt w locie: ", beltow == 1, " zdrowie gracza ", snappedf(hp0, 0.1), " -> ", snappedf(hp1, 0.1))
+	await _sprzataj(swiat)
+	# kaznodzieja: litania budzi loch i wprawia ghula w szał
+	var p0 := swiat.przebudzenie
+	var gh := swiat.dodaj_wroga("ghul", g.global_position + Vector3(9.0, 0, 0), 0.0)
+	gh.set_physics_process(false)
+	var ka := swiat.dodaj_wroga("kultysta", g.global_position + Vector3(8.0, 0, 0), PI * 0.5)
+	await _odczekaj(4.0)
+	print("kaznodzieja: stan=", ka.stan, " przebudzenie ", snappedf(p0, 0.1), " -> ", snappedf(swiat.przebudzenie, 0.1), " szał ghula=", float(gh.get("_szal")) > 0.0)
+	await _sprzataj(swiat)
+	# frakcje: włócznik i ghul obok siebie, gracz daleko i po ciemku
+	g.latarka = false
+	var daleko := g.global_position + Vector3(6.0, 0, 0)
+	var wl := swiat.dodaj_wroga("wlocznik", daleko, PI * 0.5)
+	var gh3 := swiat.dodaj_wroga("ghul", daleko + Vector3(2.5, 0, 0), -PI * 0.5)
+	var t := 0.0
+	while t < 25.0 and wl.zyje and gh3.zyje:
+		await _odczekaj(0.25)
+		t += 0.25
+	print("włócznik kontra ghul: po ", t, " s włócznik żyje=", wl.zyje, " ghul żyje=", gh3.zyje)
+	print("TEST WROGÓW ZAKOŃCZONY")
 	get_tree().quit()

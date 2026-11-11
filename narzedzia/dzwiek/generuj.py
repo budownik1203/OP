@@ -155,3 +155,32 @@ czas = t(0.5)
 x = sum(a * np.sin(2 * np.pi * f * czas + los.random() * 6) * np.exp(-czas / tau) for f, a, tau in ((2300, 1.0, 0.05), (3900, 0.6, 0.03), (5600, 0.4, 0.02), (700, 0.5, 0.03)))
 x += przesun(filtr(szum(0.25), gora=500) * wygas(0.25, 0.05), 0.0, 0.5) + przesun(filtr(szum(0.3), 800, 3000) * wygas(0.3, 0.08) * 0.3, 0.05, 0.5)
 zapisz("kilof", x, 0.8)
+
+# ---------------------------------------------------------------- build 6b: nowi wrogowie
+czas = t(1.1)
+f0 = 58 + 10 * np.sin(2 * np.pi * 3.1 * czas)
+zrodlo = signal.sawtooth(2 * np.pi * np.cumsum(f0) / SR) + szum(1.1) * 0.35
+zapisz("warg_warkot", (filtr(zrodlo, 120, 520) + filtr(zrodlo, 700, 1500) * 0.35) * np.hanning(len(czas)) ** 0.5 * (1 + 0.7 * np.sin(2 * np.pi * 31 * czas)), 0.7)
+czas = t(0.55)
+f0 = 420 - 260 * czas / 0.55
+zrodlo = signal.sawtooth(2 * np.pi * np.cumsum(f0) / SR) + szum(0.55) * 0.3
+zapisz("warg_skowyt", filtr(zrodlo, 300, 1800) * np.hanning(len(czas)) ** 0.7, 0.6)
+czas = t(1.7)
+f0 = 44 + 12 * np.sin(2 * np.pi * 1.1 * czas) + 5 * np.sin(2 * np.pi * 5.3 * czas)
+zrodlo = signal.sawtooth(2 * np.pi * np.cumsum(f0) / SR) + szum(1.7) * 0.7
+zapisz("troll_ryk", (filtr(zrodlo, 60, 380) * 1.4 + filtr(zrodlo, 500, 1100) * 0.5) * np.hanning(len(czas)) ** 0.5 * (1 + 0.4 * np.sin(2 * np.pi * 13 * czas)), 0.9)
+czas = t(2.2)
+glos = np.zeros(len(czas))
+for i, f in enumerate([98, 98, 110, 98, 87, 98]):
+    a, b = int(i * 0.36 * SR), int((i * 0.36 + 0.33) * SR)
+    n = b - a
+    glos[a:b] += signal.sawtooth(2 * np.pi * f * np.arange(n) / SR) * np.hanning(n) ** 0.4
+zapisz("kazanie", filtr(glos, 180, 700) + filtr(glos, 900, 1400) * 0.4 + filtr(szum(2.2), 200, 500) * 0.05, 0.6)
+x = filtr(szum(0.25), 400, 2600) * wygas(0.25, 0.012) + np.sin(2 * np.pi * 140 * t(0.25)) * wygas(0.25, 0.05) * 0.8
+zapisz("kusza", x, 0.7)
+czas = t(0.5)
+f0 = 230 + 60 * np.sin(2 * np.pi * 2.0 * czas)
+zrodlo = signal.sawtooth(2 * np.pi * np.cumsum(f0) / SR) + szum(0.5) * 0.25
+zapisz("krzyk", (filtr(zrodlo, 500, 1300) + filtr(zrodlo, 1500, 2600) * 0.5) * np.hanning(len(czas)) ** 0.5, 0.65)
+x = filtr(szum(0.3), gora=180) * wygas(0.3, 0.07) * 2.0 + filtr(szum(0.3), 300, 900) * wygas(0.3, 0.03) * 0.4
+zapisz("krok_ciezki", x, 0.8)

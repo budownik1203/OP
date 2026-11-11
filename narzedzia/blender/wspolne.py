@@ -150,6 +150,34 @@ class Siatka:
         s.append(tuple(range(boki, 2 * boki)))
         self._sciany(v, s, m, gladkie=set(range(n_bok)) if gladki else None)
 
+    def rura(self, pierscienie, m, gora=(0, 1, 0), boki=8):
+        """Jedna ciągła powłoka przez przekroje (punkt, szerokość, głębokość) - bez szwów między odcinkami.
+        Wymiary to pełna szerokość wielokąta (skorygowana o wpisanie w elipsę)."""
+        p0, p1 = Vector(pierscienie[0][0]), Vector(pierscienie[-1][0])
+        os_ = (p1 - p0).normalized()
+        g = Vector(gora)
+        bok = os_.cross(g)
+        if bok.length < 1e-5:
+            bok = os_.cross(Vector((1, 0, 0)))
+        bok.normalize()
+        g = bok.cross(os_).normalized()
+        kor = 1.0 / math.cos(math.pi / boki)
+        v = []
+        for (p, w, h) in pierscienie:
+            p = Vector(p)
+            for i in range(boki):
+                kat = 2 * math.pi * (i + 0.5) / boki
+                v.append(p + bok * (0.5 * math.cos(kat) * w * kor) + g * (0.5 * math.sin(kat) * h * kor))
+        s = []
+        n = len(pierscienie)
+        for r in range(n - 1):
+            for i in range(boki):
+                j = (i + 1) % boki
+                s.append((r * boki + i, r * boki + j, (r + 1) * boki + j, (r + 1) * boki + i))
+        s.append(tuple(reversed(range(boki))))
+        s.append(tuple(range((n - 1) * boki, n * boki)))
+        self._sciany(v, s, m)
+
     def walec(self, p0, p1, r, m, n=10, r1=None, gladki=True):
         r1 = r if r1 is None else r1
         self.segment(p0, p1, 2 * r, 2 * r, 2 * r1, 2 * r1, m, boki=n, gladki=gladki)

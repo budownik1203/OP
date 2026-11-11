@@ -169,6 +169,13 @@ func halas(pozycja: Vector3, promien: float) -> void:
 			w.uslyszal(pozycja, promien)
 
 
+## Miejsce, do którego ucieka wróg: jak najdalej od zagrożenia. Lokacje z siatką nadpisują.
+func punkt_ucieczki(od: Vector3, przed: Vector3) -> Vector3:
+	var k := od - przed
+	k.y = 0.0
+	return od + k.normalized() * 8.0
+
+
 ## Droga po podłodze od punktu do punktu. Lokacje z siatką nadpisują.
 func sciezka(od: Vector3, do: Vector3) -> PackedVector3Array:
 	return PackedVector3Array([do])

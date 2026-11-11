@@ -11,18 +11,20 @@ const MAPA := [
 	"######################",
 	"#S...#.......#g....#.#",
 	"#.##.#.#####.#.###.#.#",
-	"#.#....#g..#...#.T...#",
+	"#.#....#g.c#...#.T...#",
 	"#.#.####...#####.###.#",
-	"#...T..#.......#...#.#",
-	"####.#.###.###.###.#.#",
-	"#..#.#...#.#k#...#...#",
+	"#...T..#.....w.#...#.#",
+	"####.#.###.###.###.#O#",
+	"#..#.#...#.#k#.K.#...#",
 	"#.g#.###.#.#.###.#####",
-	"#....#...#...#.....T.#",
+	"#....#...#...#..zx.T.#",
 	"#.####.#######.###.#.#",
-	"#......T...k.....#.r.#",
+	"#.....wT...k.....#.r.#",
 	"######################",
 ]
 
+const ZNAKI_WROGOW := {"g": "ghul", "k": "knecht", "r": "rycerz", "w": "warg", "c": "kultysta",
+	"z": "wlocznik", "x": "kusznik", "K": "komtur", "O": "troll"}
 const P_SZYB := Vector2i(20, 9)       ## wyjście za kratą: wymaga żelaznego klucza
 const P_CHODNIK := Vector2i(1, 9)     ## stary chodnik: zawala się przy Przebudzeniu 50
 const P_BIWAK := Vector2i(7, 7)
@@ -35,10 +37,10 @@ const ZYLY := [
 ]
 ## próg Przebudzenia: [komunikat, wrogowie do wypuszczenia]
 const PROGI := [
-	[25.0, "BUDZI_1", ["ghul", "ghul"]],
-	[50.0, "BUDZI_2", ["knecht", "ghul"]],
-	[75.0, "BUDZI_3", ["rycerz", "ghul", "ghul"]],
-	[100.0, "BUDZI_4", ["ghul", "ghul", "knecht"]],
+	[25.0, "BUDZI_1", ["ghul", "warg"]],
+	[50.0, "BUDZI_2", ["knecht", "ghul", "kultysta"]],
+	[75.0, "BUDZI_3", ["rycerz", "ghul", "warg"]],
+	[100.0, "BUDZI_4", ["ghul", "warg", "knecht"]],
 ]
 
 var _siatka: AStarGrid2D
@@ -222,6 +224,33 @@ func halas(pozycja: Vector3, promien: float) -> void:
 		przebudzenie = minf(przebudzenie + promien * 0.025, 100.0)
 
 
+## Litania kaznodziei budzi loch; pierwsza w wyprawie daje komunikat.
+var _litania_ogloszona := false
+func litania(ile: float) -> void:
+	przebudzenie = minf(przebudzenie + ile, 100.0)
+	if not _litania_ogloszona:
+		_litania_ogloszona = true
+		komunikat_swiata.emit(tr("KAZANIE"))
+
+
+func punkt_ucieczki(od: Vector3, przed: Vector3) -> Vector3:
+	var najl := od
+	var najw := -1.0
+	for cz in MAPA.size():
+		for cx in MAPA[0].length():
+			if MAPA[cz][cx] == "#":
+				continue
+			var p := _srodek(cx, cz)
+			var blisko := p.distance_to(od)
+			if blisko > 16.0 or blisko < 4.0:
+				continue
+			var wart := p.distance_to(przed) - blisko * 0.35
+			if wart > najw:
+				najw = wart
+				najl = p
+	return najl
+
+
 func _process(dt: float) -> void:
 	if gracz == null or not gracz.zdrowie.zyje:
 		return
@@ -240,7 +269,7 @@ func _process(dt: float) -> void:
 		_t_fala += dt
 		if _t_fala >= 45.0:
 			_t_fala = 0.0
-			_wypusc("ghul")
+			_wypusc("ghul" if _los.randf() < 0.65 else "warg")
 
 
 ## Wypuszcza wroga daleko od gracza i wysyła go w jego stronę.
@@ -328,9 +357,9 @@ func _poziom() -> void:
 					_drabina(p)
 				"T":
 					_pochodnia(p, los)
-				"g", "k", "r":
+				"g", "k", "r", "w", "c", "z", "x", "K", "O":
 					if not bez_wrogow:
-						_wrog({"g": "ghul", "k": "knecht", "r": "rycerz"}[znak], p, los.randf() * TAU)
+						_wrog(ZNAKI_WROGOW[znak], p, los.randf() * TAU)
 	_skrzynie(los)
 
 
