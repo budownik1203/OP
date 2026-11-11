@@ -1,49 +1,23 @@
 class_name Strzelnica
-extends Node3D
+extends Swiat
 ## Build 1: strzelnica za murami klasztoru. Tarcze z płytami klas 0–5
 ## na 10, 25, 50 i 100 m, dwa manekiny rycerza, stół amunicyjny.
 
 const DYSTANSE := [10.0, 25.0, 50.0, 100.0]
-const MAKS_SLADOW := 400
-const MAKS_LUSEK := 40
-
-var gracz: Gracz
-var bronie: Array[Bron] = []
-var aktywna := 0
 var stol_pozycja := Vector3(3.2, 0.0, 2.2)
-
-var _slady: Array[MeshInstance3D] = []
-var _i_slad := 0
-var _luski: Array[RigidBody3D] = []
-var _siatka_sladu: QuadMesh
-var _mat_dziura: StandardMaterial3D
-var _mat_wgniot: StandardMaterial3D
-var _mat_ziemia: StandardMaterial3D
-var _mat_luska: StandardMaterial3D
 
 
 func _ready() -> void:
-	add_to_group("swiat")
-	_materialy_sladow()
+	przygotuj_swiat()
 	_niebo_i_swiatlo()
 	_teren()
 	_stanowisko()
 	_tarcze()
 	_manekiny()
 	_tlo()
-	var pociski := Node3D.new()
-	pociski.set_script(load("res://skrypty/bron/pociski.gd"))
-	add_child(pociski)
-	_gracz()
+	stworz_gracza(Vector3(0.0, 0.05, 0.4), 0.0)
 
 
-func _materialy_sladow() -> void:
-	_siatka_sladu = QuadMesh.new()
-	_siatka_sladu.size = Vector2(0.035, 0.035)
-	_mat_dziura = Mat.swiecacy(Color(0.02, 0.02, 0.02), 1.0)
-	_mat_wgniot = Mat.kolor(Color("b9bcc0"), 0.35, 0.9)
-	_mat_ziemia = Mat.swiecacy(Color(0.05, 0.045, 0.04), 1.0)
-	_mat_luska = Mat.kolor(Color("a8842e"), 0.4, 0.85)
 
 
 func _niebo_i_swiatlo() -> void:
@@ -243,94 +217,18 @@ func _tlo() -> void:
 		Mat.blok(self, Vector3(3.0, 1.6, 2.6), Vector3(-40.0 + i * 10.0, 7.6, -138.0), c, false)
 
 
-func _gracz() -> void:
-	gracz = Gracz.new()
-	gracz.position = Vector3(0.0, 0.05, 0.4)
-	add_child(gracz)
-	for id in ["kwarc", "jaspis"]:
-		var b := Bron.new()
-		gracz.kamera.add_child(b)
-		b.przygotuj(id, gracz)
-		bronie.append(b)
-	bronie[0].wyjmij()
-	gracz.krok.connect(func(g: float): Dzwiek.przy_uchu("krok", linear_to_db(clampf(g, 0.05, 1.0)) - 6.0, 0.12))
 
 
-func zmien_bron(i: int) -> void:
-	if i == aktywna or i >= bronie.size():
-		return
-	bronie[aktywna].schowaj()
-	aktywna = i
-	bronie[i].wyjmij()
 
 
-func bron() -> Bron:
-	return bronie[aktywna]
 
 
-## Ślad po kuli: mały znak przyklejony do powierzchni.
-func slad(pozycja: Vector3, normalna: Vector3, rodzaj: String) -> void:
-	var s: MeshInstance3D
-	if _slady.size() < MAKS_SLADOW:
-		s = MeshInstance3D.new()
-		s.mesh = _siatka_sladu
-		s.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		add_child(s)
-		_slady.append(s)
-	else:
-		s = _slady[_i_slad]
-		_i_slad = (_i_slad + 1) % MAKS_SLADOW
-	s.visible = true
-	match rodzaj:
-		"dziura":
-			s.material_override = _mat_dziura
-		"wgniot":
-			s.material_override = _mat_wgniot
-		_:
-			s.material_override = _mat_ziemia
-	var n := normalna.normalized()
-	s.global_position = pozycja + n * 0.004
-	var gora := Vector3.UP if absf(n.y) < 0.95 else Vector3.RIGHT
-	s.look_at(pozycja - n, gora)
-	s.rotate_object_local(Vector3.FORWARD, randf() * TAU)
-	var sk := randf_range(0.8, 1.3) * (1.6 if rodzaj == "ziemia" else 1.0)
-	s.scale = Vector3(sk, sk, 1.0)
 
 
-func luska(pozycja: Vector3, predkosc: Vector3, rozmiar: Vector3) -> void:
-	var rb: RigidBody3D
-	if _luski.size() < MAKS_LUSEK:
-		rb = RigidBody3D.new()
-		rb.mass = 0.012
-		rb.collision_layer = 4
-		rb.collision_mask = 1
-		var ks := CollisionShape3D.new()
-		var bs := BoxShape3D.new()
-		bs.size = Vector3(0.01, 0.01, 0.04)
-		ks.shape = bs
-		rb.add_child(ks)
-		var si := MeshInstance3D.new()
-		var bm := BoxMesh.new()
-		bm.size = Vector3.ONE
-		si.mesh = bm
-		si.material_override = _mat_luska
-		si.name = "s"
-		rb.add_child(si)
-		add_child(rb)
-		_luski.append(rb)
-	else:
-		rb = _luski.pop_front()
-		_luski.append(rb)
-	(rb.get_node("s") as MeshInstance3D).scale = rozmiar
-	rb.global_position = pozycja
-	rb.linear_velocity = predkosc
-	rb.angular_velocity = Vector3(randf_range(-20, 20), randf_range(-20, 20), randf_range(-20, 20))
-	rb.sleeping = false
 
 
 func wyczysc() -> void:
-	for s in _slady:
-		s.visible = false
+	super()
 	for p in get_tree().get_nodes_in_group("plyty"):
 		p.wyczysc()
 
@@ -343,17 +241,29 @@ func odswiez_napisy() -> void:
 			n.text = "%s %d" % [tr("KLASA"), n.get_meta("klucz_klasa")]
 
 
-## Najbliższy upuszczony magazynek w zasięgu ręki albo null.
-func magazynek_w_zasiegu() -> Node3D:
-	var najlepszy: Node3D = null
-	var odl := 2.0
-	for m in get_tree().get_nodes_in_group("do_podniesienia"):
-		var dd: float = (m as Node3D).global_position.distance_to(gracz.kamera.global_position)
-		if dd < odl:
-			odl = dd
-			najlepszy = m
-	return najlepszy
 
 
 func przy_stole() -> bool:
 	return gracz.global_position.distance_to(stol_pozycja) < 2.0
+
+
+func przy_bramie() -> bool:
+	return gracz.global_position.distance_to(Vector3(0.0, 0.0, 8.0)) < 2.4
+
+
+func podpowiedz() -> String:
+	if przy_stole():
+		return tr("STOL_PODPOWIEDZ")
+	if przy_bramie():
+		return tr("BRAMA_PODPOWIEDZ")
+	return ""
+
+
+func uzyj(gra: Node) -> bool:
+	if przy_stole():
+		gra.hud.otworz_stol()
+		return true
+	if przy_bramie():
+		gra.zmien_swiat("kopalnia")
+		return true
+	return false

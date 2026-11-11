@@ -170,9 +170,12 @@ class Siatka:
         s.append(tuple(range(n, 2 * n)))
         self._sciany(v, s, m)
 
-    def obiekt(self, faza=0.0012, gestosc=640.0, rodzic=None):
-        """Zamyka siatkę: normalne, faza krawędzi, UV sześcienne, obiekt w scenie."""
+    def obiekt(self, faza=0.0012, gestosc=640.0, rodzic=None, poczatek=None):
+        """Zamyka siatkę: normalne, faza krawędzi, UV sześcienne, obiekt w scenie.
+        poczatek: punkt obrotu segmentu (staw) we współrzędnych świata."""
         bm = self.bm
+        if poczatek is not None:
+            bmesh.ops.translate(bm, verts=bm.verts, vec=-Vector(poczatek))
         bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-6)
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
         mesh = bpy.data.meshes.new(self.nazwa)
@@ -194,8 +197,12 @@ class Siatka:
             bpy.ops.object.modifier_apply(modifier="faza")
             ob.select_set(False)
         _uv_szescienne(ob.data, gestosc)
+        swiat = Vector(poczatek) if poczatek is not None else Vector((0, 0, 0))
+        ob["swiat"] = tuple(swiat)
         if rodzic is not None:
             ob.parent = rodzic
+            swiat = swiat - Vector(rodzic.get("swiat", (0, 0, 0)))
+        ob.location = swiat
         return ob
 
 
@@ -220,7 +227,8 @@ def _uv_szescienne(mesh, gestosc):
 
 def pusty(nazwa, pozycja, rodzic=None):
     ob = bpy.data.objects.new(nazwa, None)
-    ob.location = pozycja
+    ob["swiat"] = tuple(pozycja)
+    ob.location = Vector(pozycja) - (Vector(rodzic.get("swiat", (0, 0, 0))) if rodzic is not None else Vector((0, 0, 0)))
     ob.empty_display_size = 0.02
     bpy.context.scene.collection.objects.link(ob)
     if rodzic is not None:

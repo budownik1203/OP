@@ -9,6 +9,7 @@ const KLAWISZE := {
 	"bron_1": KEY_1, "bron_2": KEY_2, "latarka": KEY_L, "uzyj": KEY_F,
 	"wyczysc": KEY_G, "strojenie": KEY_F1, "jezyk": KEY_F2, "pomoc": KEY_H,
 	"wyjdz": KEY_ESCAPE,
+	"lek_1": KEY_4, "lek_2": KEY_5, "lek_3": KEY_6, "lek_4": KEY_7, "lek_5": KEY_8,
 }
 const MYSZ := {"strzal": MOUSE_BUTTON_LEFT, "celuj": MOUSE_BUTTON_RIGHT}
 

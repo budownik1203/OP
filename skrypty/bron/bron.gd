@@ -69,6 +69,7 @@ var _czas := 0.0
 var _do_strzalu := 0.0
 var _wyjecie := 0.0
 var _sprint_f := 0.0
+var _lek_f := 0.0
 var _stan := ""
 var _t := 0.0
 var _t_max := 1.0
@@ -174,14 +175,24 @@ func _zbuduj_blysk() -> void:
 func _zbuduj_latarke() -> void:
 	_latarka = SpotLight3D.new()
 	_latarka.spot_range = 45.0
-	_latarka.spot_angle = 24.0
-	_latarka.spot_angle_attenuation = 0.7
-	_latarka.light_energy = 6.0
+	_latarka.spot_angle = 30.0
+	_latarka.spot_angle_attenuation = 0.9
+	_latarka.spot_attenuation = 0.55
+	_latarka.light_energy = 5.2
 	_latarka.light_color = Color(0.95, 0.97, 1.0)
 	_latarka.shadow_enabled = true
 	_latarka.position = Vector3(0.03, -0.03, 0.06)
 	_latarka.visible = false
 	_wylot.add_child(_latarka)
+	# słaba poświata wokół snopu, żeby było widać ściany tuż obok
+	var poswiata := SpotLight3D.new()
+	poswiata.spot_range = 14.0
+	poswiata.spot_angle = 62.0
+	poswiata.spot_angle_attenuation = 1.6
+	poswiata.light_energy = 1.0
+	poswiata.spot_attenuation = 0.6
+	poswiata.light_color = Color(0.9, 0.94, 1.0)
+	_latarka.add_child(poswiata)
 
 
 ## Ładuje wszystkie magazynki od nowa. typ_b: opcjonalny drugi typ w przeplocie 2:1.
@@ -215,12 +226,16 @@ func wyjmij() -> void:
 	Dzwiek.przy_uchu("bron_wyjmij", -8.0)
 
 
+func wlacz_latarke(stan: bool) -> void:
+	_latarka.visible = stan
+	gracz.latarka = stan
+
+
 func schowaj() -> void:
 	aktywna = false
 	_stan = ""
 	cel = 0.0
 	gracz.celuje = false
-	_latarka.visible = false
 
 
 func _process(dt: float) -> void:
@@ -229,7 +244,8 @@ func _process(dt: float) -> void:
 	if not aktywna and _wyjecie <= 0.0:
 		visible = false
 		return
-	var steruje := aktywna and gracz.sterowanie and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	var steruje := aktywna and gracz.sterowanie and gracz.zdrowie.zyje and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	gracz.latarka = _latarka.visible if aktywna else gracz.latarka
 	_sprawdz_sciane(dt)
 	_obsluz_wejscie(dt, steruje)
 	_stan_krok(dt)
@@ -254,8 +270,8 @@ func _sprawdz_sciane(dt: float) -> void:
 func _obsluz_wejscie(dt: float, steruje: bool) -> void:
 	# ujemna reszta przenosi się na kolejny strzał: szybkostrzelność nie zależy od liczby klatek
 	_do_strzalu = maxf(_do_strzalu - dt, -0.05)
-	var wolna := _stan == ""
-	var chce_cel := steruje and Input.is_action_pressed("celuj") and not gracz.sprintuje and zablokowana < 0.35 and (_stan == "" or _stan == "okno_r")
+	var wolna := _stan == "" and gracz.zdrowie.uzywa == ""
+	var chce_cel := steruje and gracz.zdrowie.uzywa == "" and Input.is_action_pressed("celuj") and not gracz.sprintuje and zablokowana < 0.35 and (_stan == "" or _stan == "okno_r")
 	if test_cel >= 0.0:
 		chce_cel = test_cel > 0.5
 	gracz.celuje = chce_cel and aktywna
@@ -437,6 +453,9 @@ func _strzal() -> void:
 	_blysk.rotation.z = randf() * TAU
 	_blysk.scale = Vector3.ONE * randf_range(0.8, 1.25)
 	Dzwiek.przy_uchu(d["dzw_strzal"], 0.0, 0.035)
+	var swiat_h := get_tree().get_first_node_in_group("swiat")
+	if swiat_h:
+		swiat_h.halas(gracz.global_position, 55.0 * float(dane_a["halas"]))
 	_wyrzuc_luske()
 
 
@@ -470,6 +489,12 @@ func _poza(dt: float) -> void:
 		poz += Vector3(-0.07, -0.05, 0.06) * sf
 		rot += Vector3(-0.22, 0.75, 0.30) * sf
 
+	# leczenie: broń opuszczona
+	_lek_f = move_toward(_lek_f, 1.0 if gracz.zdrowie.uzywa != "" else 0.0, dt * 4.0)
+	var lf := smoothstep(0.0, 1.0, _lek_f)
+	poz += Vector3(0.02, -0.22, 0.06) * lf
+	rot += Vector3(-0.7, 0.4, 0.2) * lf
+
 	# ściana
 	var zb := smoothstep(0.0, 1.0, zablokowana)
 	poz += Vector3(-0.02, -0.03, 0.16) * zb
@@ -498,7 +523,7 @@ func _poza(dt: float) -> void:
 	rot.x += cos(f * 2.0) * 0.012 * sila
 
 	# oddech i zmęczenie rąk
-	var amp: float = (0.0022 + 0.014 * (1.0 - gracz.wytrz_rece)) * Strojenie.w["S_KOLYSANIE"]
+	var amp: float = (0.0022 + 0.014 * (1.0 - gracz.wytrz_rece)) * Strojenie.w["S_KOLYSANIE"] * gracz.zdrowie.mnoznik_kolysania()
 	if gracz.kuca:
 		amp *= 0.7
 	rot.x += (sin(_czas * 1.13) + sin(_czas * 2.71) * 0.3) * amp

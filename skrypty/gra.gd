@@ -19,7 +19,8 @@ void fragment() {
 
 var kontener: SubViewportContainer
 var widok: SubViewport
-var swiat: Strzelnica
+var swiat: Swiat
+var nazwa_swiata := ""
 var hud: Hud
 var _mat_obrazu: ShaderMaterial
 
@@ -42,20 +43,51 @@ func _ready() -> void:
 	widok.msaa_3d = Viewport.MSAA_DISABLED
 	widok.positional_shadow_atlas_size = 2048
 	kontener.add_child(widok)
-	swiat = Strzelnica.new()
-	widok.add_child(swiat)
 	hud = Hud.new()
 	add_child(hud)
+	var start := "strzelnica"
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--swiat="):
+			start = a.trim_prefix("--swiat=")
 	hud.przygotuj(self)
-	for b in swiat.bronie:
-		b.komunikat.connect(hud.komunikat)
+	_zaladuj_swiat(start)
 	_zastosuj_obraz()
 	Strojenie.zmieniono.connect(func(k): if k in ["S_PIKSEL", "S_DITHER"]: _zastosuj_obraz())
 	Jezyk.zmieniono.connect(func(): swiat.odswiez_napisy(); hud.odswiez())
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	var test := Node.new()
 	test.set_script(load("res://skrypty/test_zrzut.gd"))
 	add_child(test)
+
+
+## Zmiana lokacji. Wykonywana po zakończeniu bieżącej klatki.
+func zmien_swiat(nazwa: String) -> void:
+	_zaladuj_swiat.call_deferred(nazwa)
+
+
+func _zaladuj_swiat(nazwa: String) -> void:
+	if swiat != null:
+		hud.zamknij_panele()
+		widok.remove_child(swiat)
+		swiat.free()
+	nazwa_swiata = nazwa
+	swiat = Kopalnia.new() if nazwa == "kopalnia" else Strzelnica.new()
+	widok.add_child(swiat)
+	for b in swiat.bronie:
+		b.komunikat.connect(hud.komunikat)
+	var z := swiat.gracz.zdrowie
+	z.komunikat.connect(hud.komunikat)
+	z.obrazenie.connect(hud.obrazenie)
+	z.smierc.connect(_smierc)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if nazwa == "kopalnia":
+		hud.komunikat(tr("KOPALNIA"))
+
+
+func _smierc() -> void:
+	hud.pokaz_smierc()
+	await get_tree().create_timer(5.0).timeout
+	hud.ukryj_smierc()
+	zmien_swiat("strzelnica")
 
 
 func _zastosuj_obraz() -> void:
@@ -94,5 +126,9 @@ func _unhandled_input(ev: InputEvent) -> void:
 				if b.id == m.get("id_broni"):
 					b.oddaj_magazynek(m.get("naboje"))
 			m.queue_free()
-		elif swiat.przy_stole():
-			hud.otworz_stol()
+		else:
+			swiat.uzyj(self)
+	else:
+		for i in Zdrowie.KOLEJNOSC.size():
+			if ev.is_action_pressed("lek_%d" % (i + 1)):
+				swiat.gracz.zdrowie.zacznij_uzycie(Zdrowie.KOLEJNOSC[i])

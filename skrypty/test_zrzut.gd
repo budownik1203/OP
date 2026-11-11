@@ -16,6 +16,10 @@ func _ready() -> void:
 		set_process(false)
 		_test_balistyka.call_deferred()
 		return
+	if "--test-loch" in OS.get_cmdline_user_args():
+		set_process(false)
+		_test_loch.call_deferred()
+		return
 	if "--test-gra" in OS.get_cmdline_user_args():
 		set_process(false)
 		_test_gra.call_deferred()
@@ -24,6 +28,10 @@ func _ready() -> void:
 		set_process(false)
 		return
 	DirAccess.make_dir_recursive_absolute(_katalog)
+	if get_parent().nazwa_swiata == "kopalnia":
+		set_process(false)
+		_zrzuty_loch.call_deferred()
+		return
 	# [nazwa, pozycja, obrót Y w stopniach, pochylenie, broń, celowanie, strzały, kucanie]
 	_kroki = [
 		["01_biodro_karabinek", Vector3(0, 0.05, 0.4), 0.0, 0.0, 0, 0.0, 0, false],
@@ -45,7 +53,7 @@ func _process(_dt: float) -> void:
 	if _czekaj > 0:
 		return
 	var gra := get_parent()
-	var swiat: Strzelnica = gra.swiat
+	var swiat: Swiat = gra.swiat
 	var g := swiat.gracz
 	if _i > 0:
 		var img := get_viewport().get_texture().get_image()
@@ -73,7 +81,7 @@ func _process(_dt: float) -> void:
 
 ## Strzela każdym typem amunicji w płyty każdej klasy z 10 m i wypisuje wyniki.
 func _test_balistyka() -> void:
-	var swiat: Strzelnica = get_parent().swiat
+	var swiat: Swiat = get_parent().swiat
 	swiat.gracz.sterowanie = false
 	var pociski := get_tree().get_first_node_in_group("pociski")
 	await get_tree().create_timer(0.3).timeout
@@ -123,7 +131,7 @@ func _nacisnij(akcja: String, czas := 0.05) -> void:
 ## Przechodzi przez wszystkie czynności gracza, żeby wyłapać błędy wykonania.
 func _test_gra() -> void:
 	var gra := get_parent()
-	var swiat: Strzelnica = gra.swiat
+	var swiat: Swiat = gra.swiat
 	var g := swiat.gracz
 	var hud: Hud = gra.hud
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -204,4 +212,189 @@ func _test_gra() -> void:
 	await get_tree().create_timer(0.6).timeout
 	print("przy ścianie: zablokowana=", snappedf(swiat.bron().zablokowana, 0.01))
 	print("TEST GRY ZAKOŃCZONY")
+	get_tree().quit()
+
+
+func _strzel_w(swiat: Swiat, w: Wrog, segment: String, typ: String, rodzaj := "") -> void:
+	var pociski := get_tree().get_first_node_in_group("pociski")
+	for s in w.strefy:
+		if s.segment == segment and (rodzaj == "" and s.rodzaj != "szczelina" or s.rodzaj == rodzaj):
+			var cel: Vector3 = (s.get_child(0) as Node3D).global_position
+			var od := swiat.gracz.kamera.global_position
+			pociski.wystrzel(od, (cel - od).normalized(), typ, swiat.gracz)
+			return
+
+
+func _hp(w: Wrog, segment: String) -> float:
+	for s in w.strefy:
+		if s.segment == segment and s.rodzaj != "szczelina":
+			return snappedf(s.hp, 0.1)
+	return -999.0
+
+
+## Sprawdza wrogów, strefy, rozczłonkowanie, pościg, ciosy, leki i śmierć gracza.
+func _test_loch() -> void:
+	var gra := get_parent()
+	var swiat: Kopalnia = gra.swiat
+	var g := swiat.gracz
+	g.sterowanie = false
+	print("wrogowie na mapie: ", swiat.wrogowie.size())
+	for w in swiat.wrogowie.duplicate():
+		w.queue_free()
+	swiat.wrogowie.clear()
+	await get_tree().create_timer(0.3).timeout
+	var przed := g.global_position + Vector3(6.0, 0, 0)
+	# ghul: strzał w głowę
+	var gh := swiat.dodaj_wroga("ghul", przed, PI * 0.5)
+	await get_tree().create_timer(0.3).timeout
+	_strzel_w(swiat, gh, "glowa", "A_556_FMJ")
+	await get_tree().create_timer(0.3).timeout
+	print("ghul po strzale w głowę: zyje=", gh.zyje, " hp głowy=", _hp(gh, "glowa"))
+	# ghul: noga i pełzanie
+	var gh2 := swiat.dodaj_wroga("ghul", przed, PI * 0.5)
+	await get_tree().create_timer(0.3).timeout
+	for i in 3:
+		_strzel_w(swiat, gh2, "udo_l", "A_9_HP")
+		await get_tree().create_timer(0.2).timeout
+	print("ghul po 3× 9 mm HP w udo: zyje=", gh2.zyje, " pełza=", gh2.get("_pelza"), " stan=", gh2.stan)
+	gh2.queue_free()
+	swiat.wrogowie.erase(gh2)
+	# knecht: tarcza i głowa
+	var kn := swiat.dodaj_wroga("knecht", przed, PI * 0.5)
+	await get_tree().create_timer(0.3).timeout
+	var tors_przed := _hp(kn, "tors")
+	_strzel_w(swiat, kn, "tarcza", "A_9_FMJ")
+	await get_tree().create_timer(0.25).timeout
+	print("knecht: 9 mm w tarczę, tors ", tors_przed, " -> ", _hp(kn, "tors"), ", tarcza hp=", _hp(kn, "tarcza"))
+	_strzel_w(swiat, kn, "glowa", "A_556_FMJ")
+	await get_tree().create_timer(0.25).timeout
+	print("knecht po 5,56 w głowę: zyje=", kn.zyje)
+	kn.queue_free()
+	swiat.wrogowie.erase(kn)
+	# rycerz: napierśnik kontra wizjer
+	var ry := swiat.dodaj_wroga("rycerz", przed, PI * 0.5)
+	await get_tree().create_timer(0.3).timeout
+	var t0 := _hp(ry, "tors")
+	_strzel_w(swiat, ry, "tors", "A_556_FMJ")
+	await get_tree().create_timer(0.25).timeout
+	print("rycerz: 5,56 FMJ w napierśnik, tors ", t0, " -> ", _hp(ry, "tors"))
+	_strzel_w(swiat, ry, "tors", "A_556_AP")
+	await get_tree().create_timer(0.25).timeout
+	print("rycerz: 5,56 AP w napierśnik, tors -> ", _hp(ry, "tors"))
+	var g0 := _hp(ry, "glowa")
+	_strzel_w(swiat, ry, "glowa", "A_9_FMJ", "szczelina")
+	await get_tree().create_timer(0.25).timeout
+	print("rycerz: 9 mm w wizjer, głowa ", g0, " -> ", _hp(ry, "glowa"))
+	ry.queue_free()
+	swiat.wrogowie.erase(ry)
+	# pościg i cios
+	var gh3 := swiat.dodaj_wroga("ghul", g.global_position + Vector3(9.0, 0, 0), PI * 0.5)
+	var czas := 0.0
+	var suma0 := 0.0
+	for k in g.zdrowie.hp:
+		suma0 += g.zdrowie.hp[k]
+	while czas < 14.0:
+		await get_tree().create_timer(0.25).timeout
+		czas += 0.25
+		var suma := 0.0
+		for k in g.zdrowie.hp:
+			suma += g.zdrowie.hp[k]
+		if suma < suma0:
+			break
+	print("ghul dobiegł i uderzył po ", czas, " s; stan=", gh3.stan, " zdrowie gracza=", g.zdrowie.hp)
+	print("rany: lekkie=", g.zdrowie.krwawienie_lekkie, " ciężkie=", g.zdrowie.krwawienie_ciezkie)
+	gh3.queue_free()
+	swiat.wrogowie.erase(gh3)
+	g.zdrowie.krwawienie_lekkie = 1
+	g.zdrowie.zacznij_uzycie("bandaz")
+	await get_tree().create_timer(3.4).timeout
+	print("po bandażu: lekkie=", g.zdrowie.krwawienie_lekkie, " bandaży=", g.zdrowie.leki["bandaz"])
+	# hałas
+	var gh4 := swiat.dodaj_wroga("ghul", g.global_position + Vector3(0, 0, 12.0), 0.0)
+	await get_tree().create_timer(0.3).timeout
+	swiat.halas(g.global_position, 40.0)
+	await get_tree().create_timer(0.3).timeout
+	print("ghul za ścianą po wystrzale: stan=", gh4.stan)
+	g.zdrowie.cios(999.0)
+	await get_tree().create_timer(6.0).timeout
+	print("po śmierci: świat=", gra.nazwa_swiata, " gracz żyje=", gra.swiat.gracz.zdrowie.zyje)
+	print("TEST LOCHU ZAKOŃCZONY")
+	get_tree().quit()
+
+
+func _klatki(n: int) -> void:
+	for i in n:
+		await get_tree().process_frame
+
+
+func _zapisz(nazwa: String) -> void:
+	await _klatki(3)
+	get_viewport().get_texture().get_image().save_png(_katalog + "/" + nazwa + ".png")
+
+
+## Zrzuty z kopalni: korytarz, każdy wróg z bliska, atak, zwłoki z krwią.
+func _zrzuty_loch() -> void:
+	var gra := get_parent()
+	var swiat: Kopalnia = gra.swiat
+	var g := swiat.gracz
+	g.sterowanie = false
+	for w in swiat.wrogowie.duplicate():
+		w.queue_free()
+	swiat.wrogowie.clear()
+	await _klatki(40)
+	await _zapisz("20_korytarz")
+	var typy := ["ghul", "knecht", "rycerz"]
+	for i in 3:
+		var w := swiat.dodaj_wroga(typy[i], g.global_position + Vector3(3.4, 0, 0.25), PI * 0.5)
+		w.set_physics_process(false)
+		await _klatki(25)
+		await _zapisz("2%d_%s" % [i + 1, typy[i]])
+		if i == 0:
+			w.stan = "goni"
+			await _klatki(20)
+			await _zapisz("24_ghul_goni")
+			w.stan = "atak"
+			w.set("_t_stan", 0.2)
+			await _klatki(14)
+			await _zapisz("25_ghul_zamach")
+		if i == 2:
+			w.stan = "atak"
+			w.set("_t_stan", 0.3)
+			await _klatki(16)
+			await _zapisz("26_rycerz_zamach")
+			w.stan = "czuwa"
+			for b in swiat.bronie:
+				b.test_cel = 1.0
+			g.set("_pitch", deg_to_rad(1.5))
+			await _klatki(30)
+			await _zapisz("27_rycerz_cel")
+			for b in swiat.bronie:
+				b.test_cel = 0.0
+			g.set("_pitch", 0.0)
+		if i == 1:
+			_strzel_w(swiat, w, "przedramie_p", "A_556_FMJ")
+			await _klatki(6)
+			_strzel_w(swiat, w, "glowa", "A_556_FMJ")
+			_strzel_w(swiat, w, "tors", "A_556_AP")
+			await _klatki(40)
+			await _zapisz("28_knecht_zabity")
+		w.queue_free()
+		swiat.wrogowie.erase(w)
+		await _klatki(4)
+	var gh := swiat.dodaj_wroga("ghul", g.global_position + Vector3(3.0, 0, 0), PI * 0.5)
+	gh.set_physics_process(false)
+	await _klatki(10)
+	_strzel_w(swiat, gh, "ramie_l", "A_556_FMJ")
+	_strzel_w(swiat, gh, "ramie_l", "A_556_FMJ")
+	await _klatki(4)
+	_strzel_w(swiat, gh, "glowa", "A_556_FMJ")
+	await _klatki(45)
+	g.set("_pitch", deg_to_rad(-18.0))
+	await _klatki(10)
+	await _zapisz("29_ghul_zwloki")
+	g.zdrowie.cios(30.0, true)
+	g.zdrowie.cios(34.0, true)
+	g.set("_pitch", 0.0)
+	await _klatki(10)
+	await _zapisz("30_rany")
 	get_tree().quit()

@@ -4,7 +4,7 @@ Gra FPP dla jednego gracza: polski pluton współczesnego wojska odcięty w umie
 
 ## Stan
 
-**Build 1 — Strzelnica.** Ruch, karabinek „Kwarc” i pistolet „Jaspis”, balistyka, penetracja, tarcze z klasami pancerza 0–5, manekin rycerza z pancerzem strefowym, stół amunicyjny, panel strojenia.
+**Build 2 — Pierwszy loch.** Strzelnica z builda 1 oraz kopalnia z trzema wrogami (ghul, umarły knecht, upadły rycerz), pancerzem strefowym, rozczłonkowaniem, zdrowiem strefowym gracza i lekami. Do kopalni schodzi się przez bramę za plecami na strzelnicy (F).
 
 Plan kolejnych buildów: `docs/PLAN.md`. Lista zmian: `docs/ZMIANY.md`. Projekt gry: `docs/PROJEKT.md`.
 
@@ -30,6 +30,7 @@ Plan kolejnych buildów: `docs/PLAN.md`. Lista zmian: `docs/ZMIANY.md`. Projekt 
 | T | Sprawdzenie magazynka (licznika naboi nie ma) |
 | B | Tryb ognia |
 | 1 / 2 | Karabinek / pistolet |
+| 4–8 | Leki: bandaż, opatrunek, szyna, apteczka, przeciwbólowe |
 | L | Latarka |
 | F | Użyj: stół amunicyjny, podniesienie magazynka |
 | G | Wyczyszczenie tarcz |

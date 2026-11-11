@@ -74,6 +74,11 @@ static func kamien_ciemny() -> StandardMaterial3D:
 	return _baza("kamien_c", tekstura("kamien_c", p, 64, 0.18, 12, 0.0, true), 0.42, 0.95, 0.0)
 
 
+static func skala() -> StandardMaterial3D:
+	var p := [Color("19181a"), Color("222124"), Color("2b292b"), Color("353231"), Color("2a2622")]
+	return _baza("skala", tekstura("skala", p, 64, 0.11, 71, 5.0), 0.38, 0.95, 0.0)
+
+
 static func ziemia() -> StandardMaterial3D:
 	var p := [Color("231d17"), Color("2e261d"), Color("3a3023"), Color("3f3a2a"), Color("2f3322")]
 	return _baza("ziemia", tekstura("ziemia", p, 64, 0.30, 21), 0.55, 1.0, 0.0)

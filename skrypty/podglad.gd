@@ -69,7 +69,7 @@ func _ready() -> void:
 	add_child(sw2)
 	_kamera = Camera3D.new()
 	_kamera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	_kamera.size = _rozmiar * 0.62
+	_kamera.size = _rozmiar * 1.12
 	_kamera.near = 0.01
 	_kamera.far = 50.0
 	add_child(_kamera)

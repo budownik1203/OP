@@ -74,6 +74,7 @@ func _krok(p: Dictionary, h: float, przestrzen: PhysicsDirectSpaceState3D) -> bo
 	var q := PhysicsRayQueryParameters3D.create(od, do)
 	q.exclude = p["wyklucz"]
 	q.collision_mask = 1 | 2
+	q.collide_with_areas = true
 	var hit := przestrzen.intersect_ray(q)
 	if hit.is_empty():
 		p["poz"] = do

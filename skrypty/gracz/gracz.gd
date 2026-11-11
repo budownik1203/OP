@@ -30,6 +30,8 @@ var krok_faza := 0.0
 var predkosc_pozioma := 0.0
 var ruch_myszy := Vector2.ZERO   ## zbierany dla broni, zerowany przez broń
 var sterowanie := true
+var zdrowie: Zdrowie
+var latarka := false           ## ustawiane przez broń; wrogowie widzą światło z daleka
 
 var szyja: Node3D
 var os_kamery: Node3D
@@ -46,6 +48,10 @@ var _byl_na_ziemi := true
 
 
 func _ready() -> void:
+	zdrowie = Zdrowie.new()
+	add_child(zdrowie)
+	collision_layer = 1
+	collision_mask = 1 | 8
 	_kapsula = CapsuleShape3D.new()
 	_kapsula.radius = PROMIEN
 	_kapsula.height = WYS_STOI
@@ -80,7 +86,7 @@ func _ready() -> void:
 
 
 func _unhandled_input(ev: InputEvent) -> void:
-	if not sterowanie:
+	if not sterowanie or not zdrowie.zyje:
 		return
 	if ev is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var czulosc: float = 0.0022 * Strojenie.w["S_MYSZ"] * (0.6 if celuje else 1.0)
@@ -111,7 +117,7 @@ func _physics_process(dt: float) -> void:
 	var chce_sprint := false
 	var chce_skok := false
 	var wych := 0.0
-	if sterowanie:
+	if sterowanie and zdrowie.zyje:
 		wej = Input.get_vector("lewo", "prawo", "przod", "tyl")
 		chce_sprint = Input.is_action_pressed("sprint")
 		chce_skok = Input.is_action_just_pressed("skok")
@@ -119,7 +125,7 @@ func _physics_process(dt: float) -> void:
 	var na_ziemi := is_on_floor()
 
 	# --- prędkość docelowa ---
-	sprintuje = chce_sprint and wej.y < -0.5 and not kuca and not celuje and wytrz_nogi > 0.08 and na_ziemi
+	sprintuje = chce_sprint and wej.y < -0.5 and not kuca and not celuje and wytrz_nogi > 0.08 and na_ziemi and zdrowie.moze_sprintowac()
 	var v_max := V_CHOD * tempo
 	if kuca:
 		v_max = V_KUCA * lerpf(0.6, 1.0, tempo)
@@ -129,7 +135,7 @@ func _physics_process(dt: float) -> void:
 		v_max *= 0.62
 	if wej.y > 0.1:
 		v_max *= 0.75
-	v_max *= Strojenie.w["S_RUCH"]
+	v_max *= Strojenie.w["S_RUCH"] * zdrowie.mnoznik_ruchu()
 	var kier := (global_transform.basis * Vector3(wej.x, 0.0, wej.y))
 	kier.y = 0.0
 	if kier.length() > 1.0:

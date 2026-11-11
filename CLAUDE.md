@@ -20,6 +20,8 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
 ## Układ repozytorium
 
 - `skrypty/` — GDScript. Sceny buduje się w kodzie; pliki `.tscn` zawierają tylko korzeń ze skryptem.
+- `skrypty/swiat.gd` — baza każdej lokacji (gracz, ślady, krew, hałas); `strzelnica/`, `kopalnia.gd` to lokacje; `wrogowie/` — wrogowie i strefy trafień; `gracz/zdrowie.gd` — rany i leki.
+- `narzedzia/blender/postacie.py` — wspólny szkielet człowieka i warianty wrogów.
 - `skrypty/auto/` — autoloady: `Jezyk`, `Wejscie`, `Strojenie`, `Amunicja`, `Dzwiek`.
 - `narzedzia/blender/` — skrypty modeli (`python3 kwarc.py` generuje `zasoby/modele/kwarc.glb` i tekstury).
 - `narzedzia/dzwiek/generuj.py` — synteza dźwięków zastępczych.
@@ -39,4 +41,5 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
 1. `godot --headless --import` bez błędów.
 2. `godot --headless -- --test-balistyka` — tabela wyników zgodna z projektem.
 3. `xvfb-run godot --rendering-driver opengl3 -- --test-gra` — przejście wszystkich czynności gracza bez błędów.
+   `godot --headless -- --swiat=kopalnia --test-loch` — wrogowie, strefy, rozczłonkowanie, ciosy, leki, śmierć.
 4. `narzedzia/zrzuty.sh` i obejrzenie zrzutów; nowe modele dodatkowo przez `narzedzia/podglad.sh`.

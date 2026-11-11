@@ -114,3 +114,27 @@ for i in range(22):
 zapisz("krok", x + ziarna * wygas(0.2, 0.06), 0.55)
 x = sum(przesun(stuk(los.uniform(500, 900), 0.012, 0.05) * m, o, 0.4) for o, m in ((0.0, 1.0), (0.11, 0.6), (0.19, 0.35), (0.24, 0.2)))
 zapisz("mag_ziemia", x, 0.5)
+
+# ---------------------------------------------------------------- build 2: wrogowie i rany
+czas = t(0.9)
+f0 = 78 + 26 * np.sin(2 * np.pi * 2.3 * czas) + 14 * np.sin(2 * np.pi * 7.1 * czas)
+zrodlo = signal.sawtooth(2 * np.pi * np.cumsum(f0) / SR) + szum(0.9) * 0.6
+ryk = filtr(zrodlo, 280, 900) * 1.2 + filtr(zrodlo, 1100, 2100) * 0.5 + filtr(szum(0.9), 2500, 5000) * 0.12
+zapisz("ghul_ryk", ryk * np.hanning(len(czas)) ** 0.6 * (1 + 0.5 * np.sin(2 * np.pi * 19 * czas)), 0.7)
+czas = t(1.3)
+f0 = 62 + 8 * np.sin(2 * np.pi * 0.9 * czas)
+zrodlo = signal.sawtooth(2 * np.pi * np.cumsum(f0) / SR) * 0.7 + szum(1.3) * 0.5
+zapisz("trup_jek", (filtr(zrodlo, 180, 620) + filtr(zrodlo, 800, 1300) * 0.3) * np.hanning(len(czas)), 0.55)
+x = filtr(szum(0.18), gora=420) * wygas(0.18, 0.04) * 1.5 + filtr(szum(0.18), 900, 3200) * wygas(0.18, 0.02) * 0.7
+zapisz("cialo", x, 0.6)
+x = filtr(szum(0.45), gora=220) * wygas(0.45, 0.07) * 2.0 + przesun(filtr(szum(0.2), 500, 2500) * wygas(0.2, 0.05) * 0.4, 0.05, 0.45)
+zapisz("cialo_upadek", x, 0.7)
+x = filtr(szum(0.22), gora=350) * wygas(0.22, 0.05) * 2.0 + filtr(szum(0.22), 1200, 4500) * wygas(0.22, 0.025)
+zapisz("cios", x, 0.85)
+czas = t(0.28)
+x = filtr(szum(0.28), 600, 5000) * np.hanning(len(czas)) ** 2
+zapisz("swist", x * (0.5 + 0.5 * np.sin(2 * np.pi * 3 * czas)), 0.45)
+x = sum(przesun(stuk(los.uniform(1400, 3200), 0.02, 0.07) * m, o, 0.3) for o, m in ((0.0, 1.0), (0.05, 0.6), (0.12, 0.4))) + filtr(szum(0.3), gora=200) * wygas(0.3, 0.05)
+zapisz("zbroja", x, 0.5)
+x = filtr(szum(0.8), 1500, 6000) * (0.3 + 0.7 * np.abs(np.sin(2 * np.pi * 2.2 * t(0.8)))) * np.hanning(int(SR * 0.8))
+zapisz("lek", x, 0.3)

@@ -21,6 +21,14 @@ var _panel_stol: PanelContainer
 var _pomoc_tekst: Label
 var _suwaki := {}
 var _korzen: Control
+var _cialo := {}
+var _stany: Label
+var _leki: Label
+var _pasek_uzycia: ProgressBar
+var _blysk: ColorRect
+var _blysk_a := 0.0
+var _smierc: ColorRect
+var _smierc_tekst: Label
 
 
 func przygotuj(g: Node) -> void:
@@ -30,34 +38,136 @@ func przygotuj(g: Node) -> void:
 	_korzen.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_korzen)
 	_komunikat = _etykieta(26, Color("e6dcc0"))
-	_komunikat.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_komunikat.position = Vector2(-500, -190)
-	_komunikat.size = Vector2(1000, 40)
+	_umiesc(_komunikat, Control.PRESET_CENTER_BOTTOM, -500, -190, 1000, 40)
 	_komunikat.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_komunikat.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_podpowiedz = _etykieta(22, Color("d8c9a0"))
-	_podpowiedz.set_anchors_preset(Control.PRESET_CENTER)
-	_podpowiedz.position = Vector2(-400, 120)
-	_podpowiedz.size = Vector2(800, 30)
+	_umiesc(_podpowiedz, Control.PRESET_CENTER, -400, 120, 800, 30)
 	_podpowiedz.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_wskazowka = _etykieta(20, Color("d8c9a0"))
-	_wskazowka.position = Vector2(28, 22)
+	_umiesc(_wskazowka, Control.PRESET_TOP_LEFT, 28, 22, 900, 30)
 	_tempo = _etykieta(18, Color("d8c9a0"))
-	_tempo.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	_tempo.position = Vector2(30, -128)
+	_umiesc(_tempo, Control.PRESET_BOTTOM_LEFT, 30, -128, 300, 24)
 	_pasek_nogi = _pasek(Color("8a9a5b"))
-	_pasek_nogi.position = Vector2(92, -84)
+	_umiesc(_pasek_nogi, Control.PRESET_BOTTOM_LEFT, 92, -84, 170, 8)
 	_pasek_rece = _pasek(Color("b08d57"))
-	_pasek_rece.position = Vector2(92, -60)
+	_umiesc(_pasek_rece, Control.PRESET_BOTTOM_LEFT, 92, -60, 170, 8)
 	_et_nogi = _etykieta(15, Color("d8c9a0"))
-	_et_nogi.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	_et_nogi.position = Vector2(30, -92)
+	_umiesc(_et_nogi, Control.PRESET_BOTTOM_LEFT, 30, -94, 60, 20)
 	_et_rece = _etykieta(15, Color("d8c9a0"))
-	_et_rece.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	_et_rece.position = Vector2(30, -68)
+	_umiesc(_et_rece, Control.PRESET_BOTTOM_LEFT, 30, -70, 60, 20)
+	_zbuduj_zdrowie()
 	_zbuduj_pomoc()
 	_zbuduj_strojenie()
 	odswiez()
+
+
+## Sylwetka ze strefami ciała, lista ran, leki, pasek użycia, błysk bólu, ekran śmierci.
+func _zbuduj_zdrowie() -> void:
+	_blysk = ColorRect.new()
+	_blysk.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_blysk.color = Color(0.45, 0.0, 0.0, 0.0)
+	_blysk.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_korzen.add_child(_blysk)
+	_korzen.move_child(_blysk, 0)
+	var sylw := Control.new()
+	_umiesc(sylw, Control.PRESET_BOTTOM_LEFT, 34, -330, 80, 165)
+	sylw.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_korzen.add_child(sylw)
+	var czesci := {
+		"glowa": Rect2(27, 0, 22, 24), "tors": Rect2(18, 27, 40, 58),
+		"reka_p": Rect2(2, 28, 13, 62), "reka_l": Rect2(61, 28, 13, 62),
+		"noga_p": Rect2(18, 88, 18, 72), "noga_l": Rect2(40, 88, 18, 72),
+	}
+	for k in czesci:
+		var r := ColorRect.new()
+		r.position = czesci[k].position
+		r.size = czesci[k].size
+		r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		sylw.add_child(r)
+		_cialo[k] = r
+	_stany = _etykieta(18, Color("d9a05a"))
+	_umiesc(_stany, Control.PRESET_BOTTOM_LEFT, 124, -326, 500, 160)
+	_leki = _etykieta(17, Color("bdb59c"))
+	_umiesc(_leki, Control.PRESET_BOTTOM_RIGHT, -430, -170, 400, 140)
+	_leki.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_pasek_uzycia = _pasek(Color("b9b08f"))
+	_umiesc(_pasek_uzycia, Control.PRESET_CENTER, -150, 170, 300, 10)
+	_smierc = ColorRect.new()
+	_smierc.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_smierc.color = Color(0.03, 0.0, 0.0, 0.0)
+	_smierc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_smierc.visible = false
+	_korzen.add_child(_smierc)
+	_smierc_tekst = Label.new()
+	_smierc_tekst.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_smierc_tekst.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_smierc_tekst.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_smierc_tekst.add_theme_font_size_override("font_size", 44)
+	_smierc_tekst.add_theme_color_override("font_color", Color("b33a2e"))
+	_smierc.add_child(_smierc_tekst)
+
+
+func obrazenie(_strefa: String, ile: float) -> void:
+	_blysk_a = clampf(_blysk_a + ile / 45.0, 0.25, 0.8)
+
+
+func pokaz_smierc() -> void:
+	_smierc.visible = true
+	_smierc_tekst.text = tr("POLEGL") + "\n\n" + tr("POLEGL_OPIS")
+	var tw := create_tween()
+	tw.tween_property(_smierc, "color:a", 0.93, 1.6)
+
+
+func ukryj_smierc() -> void:
+	_smierc.visible = false
+	_smierc.color.a = 0.0
+	_blysk_a = 0.0
+
+
+func _odswiez_zdrowie(dt: float) -> void:
+	var z: Zdrowie = gra.swiat.gracz.zdrowie
+	for k in _cialo:
+		var u: float = z.hp[k] / Zdrowie.MAKS[k]
+		var kolor := Color(0.05, 0.05, 0.05, 0.85)
+		if u > 0.0:
+			kolor = Color("7c1f17").lerp(Color("6f7a5a"), u)
+			kolor.a = 0.85
+		if z.zlamania.has(k):
+			kolor = kolor.lerp(Color("d9a05a"), 0.5 + 0.3 * sin(Time.get_ticks_msec() * 0.008))
+		_cialo[k].color = kolor
+	var linie := []
+	if z.krwawienie_ciezkie:
+		linie.append(tr("STAN_KRWOTOK"))
+	if z.krwawienie_lekkie > 0:
+		linie.append("%s ×%d" % [tr("STAN_KRWAWIENIE"), z.krwawienie_lekkie])
+	for k in z.zlamania:
+		linie.append("%s: %s" % [tr("STAN_ZLAMANIE"), tr("C_" + k)])
+	if z.odczuwany_bol() > 0.25:
+		linie.append(tr("STAN_BOL"))
+	if z.znieczulenie > 0.0:
+		linie.append(tr("STAN_ZNIECZULENIE"))
+	_stany.text = "\n".join(linie)
+	var l := []
+	for i in Zdrowie.KOLEJNOSC.size():
+		var id: String = Zdrowie.KOLEJNOSC[i]
+		l.append("%s ×%d   [%d]" % [tr(Zdrowie.LEKI[id][0]), z.leki[id], i + 4])
+	_leki.text = "\n".join(l)
+	_pasek_uzycia.visible = z.uzywa != ""
+	if z.uzywa != "":
+		_pasek_uzycia.value = z.uzycie_t / z.uzycie_max
+	_blysk_a = maxf(_blysk_a - dt * 0.9, 0.0)
+	var stale := z.odczuwany_bol() * 0.12 + (0.06 if z.krwawienie_ciezkie else 0.0)
+	_blysk.color.a = clampf(_blysk_a + stale, 0.0, 0.8)
+
+
+## Ustawia kontrolkę względem kotwicy: x, y to odsunięcie lewego górnego rogu.
+func _umiesc(c: Control, kotwica: int, x: float, y: float, w: float, h: float) -> void:
+	c.set_anchors_preset(kotwica)
+	c.offset_left = x
+	c.offset_top = y
+	c.offset_right = x + w
+	c.offset_bottom = y + h
 
 
 func _etykieta(rozmiar: int, kolor: Color) -> Label:
@@ -73,9 +183,6 @@ func _etykieta(rozmiar: int, kolor: Color) -> Label:
 
 func _pasek(kolor: Color) -> ProgressBar:
 	var p := ProgressBar.new()
-	p.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	p.custom_minimum_size = Vector2(170, 8)
-	p.size = Vector2(170, 8)
 	p.min_value = 0.0
 	p.max_value = 1.0
 	p.show_percentage = false
@@ -188,7 +295,7 @@ func _fmt(x: float) -> String:
 
 
 func odswiez() -> void:
-	_wskazowka.text = tr("TYTUL") + " · build 1 · " + tr("PODPOWIEDZ_H")
+	_wskazowka.text = tr("TYTUL") + " · build 2 · " + tr("PODPOWIEDZ_H")
 	_et_nogi.text = tr("WYTRZ_NOGI")
 	_et_rece.text = tr("WYTRZ_RECE")
 	(_panel_pomoc.find_child("naglowek", true, false) as Label).text = tr("POMOC")
@@ -318,8 +425,9 @@ func _process(dt: float) -> void:
 	if not panel_otwarty():
 		if gra.swiat.magazynek_w_zasiegu() != null:
 			tekst = "[F] " + tr("MAG_PODNIESIONY").to_lower()
-		elif gra.swiat.przy_stole():
-			tekst = tr("STOL_PODPOWIEDZ")
+		elif gra.swiat.podpowiedz() != "":
+			tekst = gra.swiat.podpowiedz()
 		elif gra.swiat.bron().zablokowana > 0.35:
 			tekst = tr("BRON_ZABLOKOWANA")
 	_podpowiedz.text = tekst
+	_odswiez_zdrowie(dt)
