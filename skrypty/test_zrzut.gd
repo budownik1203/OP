@@ -16,6 +16,10 @@ func _ready() -> void:
 		set_process(false)
 		_test_balistyka.call_deferred()
 		return
+	if "--test-ekstrakcja" in OS.get_cmdline_user_args():
+		set_process(false)
+		_test_ekstrakcja.call_deferred()
+		return
 	if "--test-ekwipunek" in OS.get_cmdline_user_args():
 		set_process(false)
 		_test_ekwipunek.call_deferred()
@@ -48,6 +52,7 @@ func _ready() -> void:
 		["08_stol", Vector3(2.2, 0.05, 4.6), -25.0, -14.0, 0, 0.0, 0, false],
 		["09_sciana", Vector3(12.0, 0.05, -4.0), -90.0, 0.0, 0, 0.0, 0, false],
 		["10_widok_ogolny", Vector3(-6.0, 0.05, 5.5), -28.0, -2.0, 0, 0.0, 0, false],
+		["11_skrytka", Vector3(-2.4, 0.05, 5.2), 18.0, -16.0, 0, 0.0, 0, false],
 	]
 	_czekaj = 30
 
@@ -527,4 +532,91 @@ func _test_ekwipunek() -> void:
 	await get_tree().create_timer(6.0).timeout
 	print("po śmierci: świat ", gra.nazwa_swiata, ", masa ", snappedf(E.masa(), 0.1), " kg, relikwiarz: ", E.relikwiarz.rzeczy.size(), ", plecak: ", E.plecak.rzeczy.size(), ", mag w broni: ", gra.swiat.bron().mag.size())
 	print("TEST EKWIPUNKU ZAKOŃCZONY")
+	get_tree().quit()
+
+
+## Baza, skrytka, zamiana noszonych rzeczy, głód, Przebudzenie, wyjścia, zapis.
+func _test_ekstrakcja() -> void:
+	var gra := get_parent()
+	var E := Ekwipunek
+	await get_tree().create_timer(0.3).timeout
+	print("skrytka: ", E.skrytka.rzeczy.size(), " rzeczy")
+	var pas := {}
+	var patrolowy := {}
+	for p in E.skrytka.rzeczy:
+		if p["id"] == "pas":
+			pas = p
+		elif p["id"] == "plecak_patrolowy":
+			patrolowy = p
+	print("pas zamiast kamizelki (4 magazynki 1×2 nie wejdą w 4×1): ", E.zamien_noszone(pas, E.skrytka), "; kamizelka nadal ", E.kamizelka_p["id"])
+	var rzeczy_w_plecaku := E.plecak.rzeczy.size()
+	print("plecak patrolowy: ", E.zamien_noszone(patrolowy, E.skrytka), "; siatka ", E.plecak.szer, "×", E.plecak.wys, "; stary plecak w skrytce z ", rzeczy_w_plecaku, " rzeczami")
+	for p in E.skrytka.rzeczy.duplicate():
+		if p["id"] == "plecak_szturmowy":
+			E.zamien_noszone(p, E.skrytka)
+	# zapis i odczyt stanu
+	var masa0 := E.masa()
+	var tekst := var_to_str(E.call("_stan"))
+	E.call("_ustaw_stan", str_to_var(tekst))
+	print("zapis bazy: ", tekst.length(), " znaków; masa ", snappedf(masa0, 0.01), " -> ", snappedf(E.masa(), 0.01), "; skrytka ", E.skrytka.rzeczy.size(), "; mag w stanie broni ", E.stan_broni["kwarc"]["mag"]["dane"]["naboje"].size())
+	# jedzenie
+	E.sytosc = 30.0
+	E.nawodnienie = 20.0
+	var racja := {}
+	var manierka := {}
+	for p in E.plecak.rzeczy:
+		if p["id"] == "racja":
+			racja = p
+		elif p["id"] == "manierka":
+			manierka = p
+	var z: Zdrowie = gra.swiat.gracz.zdrowie
+	print("niedobór przy pragnieniu 20%: ", snappedf(z.niedobor(), 0.01))
+	z.zacznij_spozycie(manierka)
+	await get_tree().create_timer(2.8).timeout
+	z.zacznij_spozycie(racja)
+	await get_tree().create_timer(5.3).timeout
+	print("po manierce i racji: sytość ", E.sytosc, ", nawodnienie ", E.nawodnienie, ", porcje w manierce ", manierka["dane"]["porcje"])
+	# wyprawa
+	gra.wyrusz()
+	await get_tree().create_timer(1.0).timeout
+	var k: Kopalnia = gra.swiat
+	print("w kopalni: na_wyprawie=", E.na_wyprawie, ", wrogów ", k.wrogowie.size(), ", przebudzenie ", snappedf(k.przebudzenie, 0.01))
+	var n0 := E.nawodnienie
+	await get_tree().create_timer(2.0).timeout
+	print("pragnienie rośnie: ", snappedf(n0 - E.nawodnienie, 0.001), " pkt w 2 s")
+	k.halas(k.gracz.global_position, 55.0)
+	print("po wystrzale: przebudzenie ", snappedf(k.przebudzenie, 0.01))
+	k.przebudzenie = 24.9
+	await get_tree().create_timer(1.5).timeout
+	print("próg 1: prog=", k.prog, ", wrogów ", k.wrogowie.size(), ", komunikat: ", gra.hud.get("_komunikat").text)
+	k.przebudzenie = 50.0
+	await get_tree().create_timer(0.5).timeout
+	print("próg 2: chodnik zawalony=", k.chodnik_zawalony, ", wrogów ", k.wrogowie.size())
+	# zapis biwaku
+	k.gracz.zdrowie.cios(20.0)
+	var stan := k.stan_do_zapisu()
+	var stan2: Dictionary = str_to_var(var_to_str(stan))
+	print("stan biwaku: żywi ", stan2["zywi"], ", skrzyń ", stan2["skrzynie"].size(), ", hp torsu ", snappedf(stan2["zdrowie"]["hp"]["tors"], 0.1))
+	# wyjście przez kratę
+	for w in k.wrogowie.duplicate():
+		w.queue_free()
+	k.wrogowie.clear()
+	k.gracz.global_position = k.call("_srodek", 20, 9) + Vector3(0, 0.05, 0)
+	await get_tree().create_timer(0.3).timeout
+	print("przy kracie: ", k.podpowiedz())
+	k.uzyj(gra)
+	await get_tree().create_timer(0.3).timeout
+	print("bez klucza: świat ", gra.nazwa_swiata)
+	E.kieszenie.wloz_gdziekolwiek(E.nowy("klucz"))
+	E.kieszenie.wloz_gdziekolwiek(E.nowy("monety"))
+	k.uzyj(gra)
+	await get_tree().create_timer(1.0).timeout
+	print("z kluczem: świat ", gra.nazwa_swiata, ", na_wyprawie=", E.na_wyprawie, ", wyprawy=", E.wyprawy, ", monety wyniesione: ", E.leki().size() > 0 and not E.kieszenie.rzeczy.is_empty())
+	# wznowienie z biwaku
+	gra.set("_dane_biwaku", stan2)
+	gra.zmien_swiat("kopalnia")
+	await get_tree().create_timer(1.0).timeout
+	k = gra.swiat
+	print("wznowienie: przebudzenie ", snappedf(k.przebudzenie, 0.1), ", prog ", k.prog, ", chodnik zawalony ", k.chodnik_zawalony, ", hp torsu ", snappedf(k.gracz.zdrowie.hp["tors"], 0.1), ", pozycja przy biwaku ", k.podpowiedz())
+	print("TEST EKSTRAKCJI ZAKOŃCZONY")
 	get_tree().quit()

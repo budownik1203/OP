@@ -33,6 +33,10 @@ var zyje := true
 var uzywa := ""                  ## lek w trakcie użycia
 var uzycie_t := 0.0
 var uzycie_max := 1.0
+var _spozywany := {}
+
+const CZAS_PRAGNIENIA := 1800.0   ## sekundy od pełnego nawodnienia do zera
+const CZAS_GLODU := 3300.0
 
 
 func _ready() -> void:
@@ -102,12 +106,24 @@ func _process(dt: float) -> void:
 		# krew tracona jest z całego ciała, najpierw z torsu
 		_odejmij("tors", ubytek * dt)
 		zmiana.emit()
+	var sw := get_tree().get_first_node_in_group("swiat")
+	if sw != null and sw.get("wyprawa"):
+		Ekwipunek.nawodnienie = maxf(Ekwipunek.nawodnienie - dt * 100.0 / CZAS_PRAGNIENIA, 0.0)
+		Ekwipunek.sytosc = maxf(Ekwipunek.sytosc - dt * 100.0 / CZAS_GLODU, 0.0)
+		if Ekwipunek.nawodnienie <= 0.0 or Ekwipunek.sytosc <= 0.0:
+			_odejmij("tors", 0.15 * dt)
+			zmiana.emit()
 	znieczulenie = maxf(znieczulenie - dt, 0.0)
 	bol = maxf(bol - dt * (0.02 if znieczulenie <= 0.0 else 0.25), 0.0)
 	if uzywa != "":
 		uzycie_t += dt
 		if uzycie_t >= uzycie_max:
-			_zastosuj(uzywa)
+			if uzywa == "spozycie":
+				if Ekwipunek.spozyj(_spozywany):
+					komunikat.emit(tr(Ekwipunek.PRZEDMIOTY[_spozywany["id"]]["nazwa"]) + ": " + tr("LEK_UZYTO"))
+				_spozywany = {}
+			else:
+				_zastosuj(uzywa)
 			uzywa = ""
 			zmiana.emit()
 
@@ -126,6 +142,28 @@ func zacznij_uzycie(lek: String) -> void:
 	uzycie_max = LEKI[lek][1]
 	Dzwiek.przy_uchu("lek", -6.0)
 	zmiana.emit()
+
+
+## Jedzenie i picie: trwa kilka sekund, broń opuszczona.
+func zacznij_spozycie(p: Dictionary) -> void:
+	if not zyje or uzywa != "":
+		return
+	var def: Dictionary = Ekwipunek.PRZEDMIOTY[p["id"]]
+	if def["typ"] == "picie" and int(p["dane"].get("porcje", 0)) <= 0:
+		komunikat.emit(tr("E_PUSTE"))
+		return
+	_spozywany = p
+	uzywa = "spozycie"
+	uzycie_t = 0.0
+	uzycie_max = 5.0 if def["typ"] == "jedzenie" else 2.5
+	Dzwiek.przy_uchu("lek", -6.0)
+	zmiana.emit()
+
+
+## 0 = syty i napojony, 1 = skrajny niedobór. Kary zaczynają się poniżej 25%.
+func niedobor() -> float:
+	var n := minf(Ekwipunek.sytosc, Ekwipunek.nawodnienie)
+	return clampf((25.0 - n) / 25.0, 0.0, 1.0)
 
 
 func przerwij_uzycie() -> void:
@@ -196,7 +234,7 @@ func moze_sprintowac() -> bool:
 
 ## Mnożnik kołysania broni: ból i uszkodzone ręce.
 func mnoznik_kolysania() -> float:
-	var m := 1.0 + odczuwany_bol() * 1.5
+	var m := 1.0 + odczuwany_bol() * 1.5 + niedobor() * 1.2
 	for r in ["reka_l", "reka_p"]:
 		if zlamania.has(r) or hp[r] <= 0.0:
 			m += 1.2

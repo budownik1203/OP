@@ -23,19 +23,172 @@ const MAPA := [
 	"######################",
 ]
 
+const P_SZYB := Vector2i(20, 9)       ## wyjście za kratą: wymaga żelaznego klucza
+const P_CHODNIK := Vector2i(1, 9)     ## stary chodnik: zawala się przy Przebudzeniu 50
+const P_BIWAK := Vector2i(7, 7)
+## próg Przebudzenia: [komunikat, wrogowie do wypuszczenia]
+const PROGI := [
+	[25.0, "BUDZI_1", ["ghul", "ghul"]],
+	[50.0, "BUDZI_2", ["knecht", "ghul"]],
+	[75.0, "BUDZI_3", ["rycerz", "ghul", "ghul"]],
+	[100.0, "BUDZI_4", ["ghul", "ghul", "knecht"]],
+]
+
 var _siatka: AStarGrid2D
 var _start := Vector3.ZERO
 var bez_wrogow := false
+var przebudzenie := 0.0
+var prog := 0                     ## ile progów już minęło
+var chodnik_zawalony := false
+var dane_biwaku := {}             ## ustawiane przed wejściem do drzewa przy wznowieniu
+var _lista_skrzyn: Array[Skrzynia] = []
+var _wrogowie_startowi: Array = []
+var _t_fala := 0.0
+var _zawal: Node3D
+var _los := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
+	wyprawa = true
+	_los.randomize()
 	przygotuj_swiat()
 	_otoczenie()
 	_poziom()
-	stworz_gracza(_start + Vector3(0, 0.05, 0), -PI * 0.5)
+	_wyjscia_i_biwak()
+	_wrogowie_startowi = wrogowie.duplicate()
+	var poz := _start + Vector3(0, 0.05, 0)
+	if not dane_biwaku.is_empty():
+		poz = _srodek(P_BIWAK.x, P_BIWAK.y) + Vector3(0, 0.05, 0)
+	stworz_gracza(poz, -PI * 0.5)
 	for b in bronie:
 		b.wlacz_latarke(true)
 	gracz.latarka = true
+	if not dane_biwaku.is_empty():
+		_wznow(dane_biwaku)
+
+
+func _wyjscia_i_biwak() -> void:
+	var dr := Mat.drewno()
+	var zel := Mat.kolor(Color("26282b"), 0.6, 0.7)
+	# krata szybu
+	var ps := _srodek(P_SZYB.x, P_SZYB.y)
+	for i in 6:
+		Mat.blok(self, Vector3(0.05, WYS, 0.05), ps + Vector3(-1.0 + i * 0.4, WYS * 0.5, 1.2), zel, false)
+	for y in [0.5, 1.6, 2.6]:
+		Mat.blok(self, Vector3(2.4, 0.06, 0.06), ps + Vector3(0, y, 1.2), zel, false)
+	var sw := OmniLight3D.new()
+	sw.position = ps + Vector3(0, 2.4, 0.6)
+	sw.light_color = Color(0.55, 0.62, 0.75)
+	sw.light_energy = 0.6
+	sw.omni_range = 5.0
+	add_child(sw)
+	# stary chodnik: pochylnia w górę i blade światło
+	var pc := _srodek(P_CHODNIK.x, P_CHODNIK.y)
+	Mat.blok(self, Vector3(2.2, 0.2, 2.6), pc + Vector3(-0.2, 0.35, 0.9), dr, false, Vector3(deg_to_rad(-22), 0, 0))
+	var sw2 := OmniLight3D.new()
+	sw2.position = pc + Vector3(0, 2.3, 1.0)
+	sw2.light_color = Color(0.6, 0.66, 0.72)
+	sw2.light_energy = 0.7
+	sw2.omni_range = 5.5
+	add_child(sw2)
+	_zawal = Node3D.new()
+	_zawal.visible = false
+	add_child(_zawal)
+	for i in 9:
+		var r := Vector3(_los.randf_range(0.6, 1.3), _los.randf_range(0.5, 1.1), _los.randf_range(0.6, 1.2))
+		Mat.blok(_zawal, r, pc + Vector3(_los.randf_range(-1.0, 1.0), 0.3 + (i / 3) * 0.7, _los.randf_range(0.2, 1.3)), Mat.skala(), false, Vector3(_los.randf(), _los.randf() * 3.0, _los.randf()))
+	# biwak: palenisko i posłanie
+	var pb := _srodek(P_BIWAK.x, P_BIWAK.y)
+	for i in 6:
+		var kat := i * TAU / 6.0
+		Mat.blok(self, Vector3(0.22, 0.16, 0.18), pb + Vector3(cos(kat) * 0.38, 0.08, sin(kat) * 0.38), Mat.kamien_ciemny(), false, Vector3(0, -kat, 0))
+	Mat.blok(self, Vector3(0.5, 0.07, 0.07), pb + Vector3(0, 0.06, 0), dr, false, Vector3(0, 0.6, 0))
+	Mat.blok(self, Vector3(0.5, 0.07, 0.07), pb + Vector3(0, 0.10, 0), dr, false, Vector3(0, -0.7, 0))
+	Mat.blok(self, Vector3(0.7, 0.06, 1.8), pb + Vector3(0.95, 0.03, 0.2), Mat.plotno(), false)
+
+
+## Stan lochu do zapisu przy biwaku.
+func stan_do_zapisu() -> Dictionary:
+	var zywi := []
+	for w in _wrogowie_startowi:
+		zywi.append(is_instance_valid(w) and w.zyje)
+	var skrz := []
+	for s in _lista_skrzyn:
+		skrz.append(s.pojemnik.do_danych())
+	var z := gracz.zdrowie
+	return {
+		"wersja": 1, "przebudzenie": przebudzenie, "prog": prog, "chodnik": chodnik_zawalony,
+		"zywi": zywi, "skrzynie": skrz,
+		"zdrowie": {"hp": z.hp.duplicate(), "lekkie": z.krwawienie_lekkie, "ciezkie": z.krwawienie_ciezkie, "zlamania": z.zlamania.duplicate(), "bol": z.bol},
+	}
+
+
+func _wznow(d: Dictionary) -> void:
+	przebudzenie = float(d["przebudzenie"])
+	prog = int(d["prog"])
+	chodnik_zawalony = bool(d["chodnik"])
+	_zawal.visible = chodnik_zawalony
+	var zywi: Array = d["zywi"]
+	for i in mini(zywi.size(), _wrogowie_startowi.size()):
+		if not zywi[i]:
+			var w: Wrog = _wrogowie_startowi[i]
+			wrogowie.erase(w)
+			w.queue_free()
+	var skrz: Array = d["skrzynie"]
+	for i in mini(skrz.size(), _lista_skrzyn.size()):
+		_lista_skrzyn[i].pojemnik = Pojemnik.z_danych(skrz[i])
+	var z := gracz.zdrowie
+	for k in d["zdrowie"]["hp"]:
+		z.hp[k] = float(d["zdrowie"]["hp"][k])
+	z.krwawienie_lekkie = int(d["zdrowie"]["lekkie"])
+	z.krwawienie_ciezkie = bool(d["zdrowie"]["ciezkie"])
+	z.zlamania = d["zdrowie"]["zlamania"]
+	z.bol = float(d["zdrowie"]["bol"])
+
+
+func halas(pozycja: Vector3, promien: float) -> void:
+	super(pozycja, promien)
+	# głośne dźwięki budzą loch: wystrzał bez tłumika to około 1,4 punktu
+	if promien >= 20.0:
+		przebudzenie = minf(przebudzenie + promien * 0.025, 100.0)
+
+
+func _process(dt: float) -> void:
+	if gracz == null or not gracz.zdrowie.zyje:
+		return
+	przebudzenie = minf(przebudzenie + dt * 100.0 / 2400.0, 100.0)
+	while prog < PROGI.size() and przebudzenie >= float(PROGI[prog][0]):
+		var p: Array = PROGI[prog]
+		prog += 1
+		komunikat_swiata.emit(tr(p[1]))
+		Dzwiek.przy_uchu("dudnienie", -2.0, 0.05)
+		if prog >= 2 and not chodnik_zawalony:
+			chodnik_zawalony = true
+			_zawal.visible = true
+		for typ in p[2]:
+			_wypusc(typ)
+	if prog >= PROGI.size():
+		_t_fala += dt
+		if _t_fala >= 45.0:
+			_t_fala = 0.0
+			_wypusc("ghul")
+
+
+## Wypuszcza wroga daleko od gracza i wysyła go w jego stronę.
+func _wypusc(typ: String) -> void:
+	if bez_wrogow:
+		return
+	var wolne := []
+	for cz in MAPA.size():
+		for cx in MAPA[0].length():
+			if MAPA[cz][cx] != "#" and _srodek(cx, cz).distance_to(gracz.global_position) > 18.0:
+				wolne.append(Vector2i(cx, cz))
+	if wolne.is_empty():
+		return
+	var c: Vector2i = wolne[_los.randi_range(0, wolne.size() - 1)]
+	_wrog(typ, _srodek(c.x, c.y), _los.randf() * TAU)
+	var w: Wrog = wrogowie[-1]
+	w.uslyszal.call_deferred(gracz.global_position, 999.0)
 
 
 func _otoczenie() -> void:
@@ -125,6 +278,7 @@ func _skrzynie(los: RandomNumberGenerator) -> void:
 		s.rotation.y = atan2(-bok.x, -bok.z) + PI
 		add_child(s)
 		s.przygotuj(los)
+		_lista_skrzyn.append(s)
 
 
 func _znak(cx: int, cz: int) -> String:
@@ -212,16 +366,48 @@ func sciezka(od: Vector3, do: Vector3) -> PackedVector3Array:
 	return wynik
 
 
+func _przy(pole: Vector2i, zasieg := 1.9) -> bool:
+	return gracz.global_position.distance_to(_srodek(pole.x, pole.y)) < zasieg
+
+
 func przy_wyjsciu() -> bool:
 	return gracz.global_position.distance_to(_start + Vector3(-0.8, 0, 0)) < 1.7
 
 
 func podpowiedz() -> String:
-	return tr("WYJSCIE_PODPOWIEDZ") if przy_wyjsciu() else ""
+	if przy_wyjsciu():
+		return tr("WYJSCIE_PODPOWIEDZ")
+	if _przy(P_SZYB):
+		return tr("WYJSCIE_KRATA")
+	if _przy(P_CHODNIK):
+		return tr("WYJSCIE_ZAWALONE") if chodnik_zawalony else tr("WYJSCIE_CHODNIK")
+	if _przy(P_BIWAK, 1.6):
+		return tr("BIWAK_PODP")
+	return ""
 
 
 func uzyj(gra: Node) -> bool:
 	if przy_wyjsciu():
-		gra.zmien_swiat("strzelnica")
+		gra.ewakuacja()
+		return true
+	if _przy(P_SZYB):
+		if Ekwipunek.zuzyj_lek("klucz"):
+			gra.ewakuacja()
+		else:
+			gra.hud.komunikat(tr("WYJSCIE_BRAK_KLUCZA"))
+		return true
+	if _przy(P_CHODNIK) and not chodnik_zawalony:
+		gra.ewakuacja()
+		return true
+	if _przy(P_BIWAK, 1.6):
+		gra.hud.otworz_biwak()
 		return true
 	return false
+
+
+## Odpoczynek przy ogniu: wytrzymałość wraca, ale dym i światło budzą loch.
+func odpocznij() -> void:
+	gracz.wytrz_nogi = 1.0
+	gracz.wytrz_rece = 1.0
+	gracz.zdrowie.bol = maxf(gracz.zdrowie.bol - 0.4, 0.0)
+	przebudzenie = minf(przebudzenie + 6.0, 100.0)

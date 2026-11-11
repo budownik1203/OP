@@ -25,6 +25,7 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
 - `narzedzia/blender/postacie.py` — wspólny szkielet człowieka i warianty wrogów.
 - `skrypty/auto/` — autoloady: `Jezyk`, `Wejscie`, `Strojenie`, `Amunicja`, `Dzwiek`, `Ekwipunek` (stan żołnierza między lokacjami).
 - `skrypty/ekwipunek/` — siatka (`Pojemnik`), przedmioty leżące, skrzynie; `skrypty/ui/ekwipunek_ui.gd` — ekran ekwipunku.
+- Zapis: `user://baza.sav` (stan bazy i żołnierza) i `user://biwak.sav` (zawieszona wyprawa, kasowany przy wczytaniu); testy uruchamiane z `--test…`/`--zrzut…` nie zapisują.
 - Uwaga: świat 3D jest w SubViewport i nie dostaje zdarzeń myszy. Wejście gracza przekazuje `gra.gd` (`Gracz.wejscie`). Kontrolki pełnoekranowe ustawiać przez `set_anchors_and_offsets_preset`.
 - `narzedzia/blender/` — skrypty modeli (`python3 kwarc.py` generuje `zasoby/modele/kwarc.glb` i tekstury).
 - `narzedzia/dzwiek/generuj.py` — synteza dźwięków zastępczych.
@@ -45,5 +46,6 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
 2. `godot --headless -- --test-balistyka` — tabela wyników zgodna z projektem.
 3. `xvfb-run godot --rendering-driver opengl3 -- --test-gra` — przejście wszystkich czynności gracza bez błędów.
    `xvfb-run godot --rendering-driver opengl3 -- --test-ekwipunek` — siatka, waga, przeciąganie myszą, łup, śmierć.
+   `godot --headless -- --test-ekstrakcja` — skrytka, zamiana noszonych rzeczy, głód, Przebudzenie, wyjścia, zapis i wznowienie.
    `godot --headless -- --swiat=kopalnia --test-loch` — wrogowie, strefy, rozczłonkowanie, ciosy, leki, śmierć.
 4. `narzedzia/zrzuty.sh` i obejrzenie zrzutów; nowe modele dodatkowo przez `narzedzia/podglad.sh`.

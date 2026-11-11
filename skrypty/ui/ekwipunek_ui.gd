@@ -50,7 +50,7 @@ func _uklad() -> void:
 	if Ekwipunek.plecak != null:
 		_obszary.append({"poj": Ekwipunek.plecak, "pos": Vector2(x, y)})
 	if lup != null:
-		_obszary.append({"poj": lup, "pos": Vector2(maxf(size.x - 5 * POLE - 120, x + 8 * POLE), 150.0)})
+		_obszary.append({"poj": lup, "pos": Vector2(maxf(size.x - lup.szer * POLE - 60, x + 8 * POLE), 150.0)})
 
 
 func _process(dt: float) -> void:
@@ -141,6 +141,7 @@ func _draw() -> void:
 		_podpowiedz(najechany, mysz)
 	if not Ekwipunek.ladowanie.is_empty():
 		_tekst(Vector2(430, size.y - 96), tr("E_LADOWANIE"), 18, Color("d9a05a"))
+	_tekst(Vector2(60, size.y - 80), tr("E_DWUKLIK"), 16, Color("8f8872"))
 	_tekst(Vector2(60, size.y - 56), tr("E_PODPOWIEDZ"), 16, Color("8f8872"))
 
 
@@ -164,6 +165,8 @@ func _rysuj_przedmiot(p: Dictionary, r: Rect2, alfa := 1.0) -> void:
 		yy += 13.0
 	if p["dane"].has("ile"):
 		_tekst(r.position + Vector2(4, r.size.y - 5), "×%d" % int(p["dane"]["ile"]), 13, Color(1, 0.95, 0.7, alfa))
+	if p["dane"].has("porcje"):
+		_tekst(r.position + Vector2(4, r.size.y - 5), "%d/%d" % [int(p["dane"]["porcje"]), int(def["porcje"])], 13, Color(0.75, 0.9, 1.0, alfa))
 	if not Ekwipunek.ladowanie.is_empty() and is_same(Ekwipunek.ladowanie["mag"], p):
 		draw_rect(r, Color("d9a05a"), false, 3.0)
 
@@ -178,6 +181,8 @@ func _podpowiedz(p: Dictionary, mysz: Vector2) -> void:
 			linie.append(tr("E_NA_WIERZCHU") + ": " + tr(naboje[-1]))
 	if p["dane"].has("typ"):
 		linie.append(tr(p["dane"]["typ"]))
+	if p["dane"].has("porcje"):
+		linie.append("%s: %d" % [tr("E_PORCJE"), int(p["dane"]["porcje"])])
 	if def.has("siatka"):
 		linie.append("%s: %d×%d" % [tr("E_POJEMNOSC"), def["siatka"].x, def["siatka"].y])
 	var szer := 0.0
@@ -223,6 +228,14 @@ func _gui_input(ev: InputEvent) -> void:
 		return
 	var mb := ev as InputEventMouseButton
 	var cel := _cel_pod_mysza(mb.position)
+	if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed and mb.double_click:
+		_odloz_ciagniety()
+		if not cel.is_empty():
+			var pojd: Pojemnik = cel["poj"]
+			var pd := pojd.na_polu(cel["x"], cel["y"])
+			if not pd.is_empty() and pd.get("odkryty", true):
+				_uzyj(pd, pojd)
+		return
 	if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
 		if cel.is_empty():
 			return
@@ -286,3 +299,31 @@ func _szybko_przenies(p: Dictionary, z: Pojemnik) -> void:
 	else:
 		Dzwiek.przy_uchu("klik", -10.0, 0.2)
 	Ekwipunek.zmiana.emit()
+
+
+## Dwuklik: lek leczy, jedzenie i picie są spożywane, kamizelka i plecak zakładane.
+func _uzyj(p: Dictionary, z: Pojemnik) -> void:
+	var def: Dictionary = Ekwipunek.PRZEDMIOTY[p["id"]]
+	var zdrowie: Zdrowie = gra.swiat.gracz.zdrowie
+	match def["typ"]:
+		"lek":
+			if z != lup or Ekwipunek.podnies(_wyjety(p, z)):
+				zdrowie.zacznij_uzycie(p["id"])
+		"jedzenie", "picie":
+			if z == lup:
+				if not Ekwipunek.podnies(_wyjety(p, z)):
+					z.wloz_gdziekolwiek(p)
+					gra.hud.komunikat(tr("E_BRAK_MIEJSCA"))
+					return
+			zdrowie.zacznij_spozycie(p)
+		"kamizelka", "plecak":
+			if Ekwipunek.zamien_noszone(p, z):
+				gra.hud.komunikat(tr("E_ZALOZONO") + ": " + tr(def["nazwa"]))
+				Dzwiek.przy_uchu("bron_wyjmij", -6.0)
+			else:
+				gra.hud.komunikat(tr("E_NIE_MIESCI") if def["typ"] == "kamizelka" else tr("E_BRAK_MIEJSCA"))
+
+
+func _wyjety(p: Dictionary, z: Pojemnik) -> Dictionary:
+	z.usun(p)
+	return p

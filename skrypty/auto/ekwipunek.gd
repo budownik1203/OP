@@ -16,8 +16,11 @@ const PRZEDMIOTY := {
 	"szyna": {"nazwa": "LEK_SZYNA", "w": 1, "h": 2, "masa": 0.30, "typ": "lek", "kolor": "6f7462"},
 	"apteczka": {"nazwa": "LEK_APTECZKA", "w": 2, "h": 1, "masa": 0.55, "typ": "lek", "kolor": "7a2f28"},
 	"przeciwbolowe": {"nazwa": "LEK_PRZECIWBOLOWE", "w": 1, "h": 1, "masa": 0.03, "typ": "lek", "kolor": "8c8a80"},
-	"konserwa": {"nazwa": "P_KONSERWA", "w": 1, "h": 1, "masa": 0.40, "typ": "inne", "kolor": "6b6f72"},
-	"suchary": {"nazwa": "P_SUCHARY", "w": 1, "h": 1, "masa": 0.20, "typ": "inne", "kolor": "8a7a52"},
+	"konserwa": {"nazwa": "P_KONSERWA", "w": 1, "h": 1, "masa": 0.40, "typ": "jedzenie", "kolor": "6b6f72", "sytosc": 55.0, "woda": 0.0},
+	"suchary": {"nazwa": "P_SUCHARY", "w": 1, "h": 1, "masa": 0.20, "typ": "jedzenie", "kolor": "8a7a52", "sytosc": 25.0, "woda": -5.0},
+	"racja": {"nazwa": "P_RACJA", "w": 1, "h": 2, "masa": 0.55, "typ": "jedzenie", "kolor": "5b5a3c", "sytosc": 80.0, "woda": 10.0},
+	"manierka": {"nazwa": "P_MANIERKA", "w": 1, "h": 2, "masa": 0.30, "typ": "picie", "kolor": "4f5a3e", "woda": 35.0, "porcje": 3},
+	"buklak": {"nazwa": "P_BUKLAK", "w": 1, "h": 1, "masa": 0.15, "typ": "picie", "kolor": "5c4630", "woda": 35.0, "porcje": 1},
 	"monety": {"nazwa": "P_MONETY", "w": 1, "h": 1, "masa": 0.15, "typ": "lup", "kolor": "8f7a2e"},
 	"relikwia": {"nazwa": "P_RELIKWIA", "w": 1, "h": 2, "masa": 0.60, "typ": "lup", "kolor": "6e5a7a"},
 	"klucz": {"nazwa": "P_KLUCZ", "w": 1, "h": 1, "masa": 0.05, "typ": "lup", "kolor": "5c5f63"},
@@ -41,14 +44,55 @@ var kamizelka_p := {}           ## przedmiot kamizelki
 var plecak_p := {}              ## przedmiot plecaka ({} = brak)
 var stan_broni := {}            ## id broni -> {"mag": przedmiot albo {}, "komora": typ}
 var ladowanie := {}             ## trwające ładowanie magazynka: {mag, paczka, t}
+var skrytka: Pojemnik           ## skrytka w bazie
+var sytosc := 100.0             ## 0..100
+var nawodnienie := 100.0        ## 0..100
+var na_wyprawie := false        ## ustawiane przy wyjściu z bazy; wyjście z gry w lochu bez biwaku = strata żołnierza
+var wyprawy := 0
+var polegli := 0
+var komunikat_startowy := ""
+var zapis_wlaczony := true      ## testy wyłączają zapis na dysk
+
+const PLIK_BAZY := "user://baza.sav"
+const PLIK_BIWAKU := "user://biwak.sav"
 
 
 func _ready() -> void:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--test") or a.begins_with("--zrzut"):
+			zapis_wlaczony = false
+	skrytka = Pojemnik.new(10, 14, "E_SKRYTKA")
 	nowy_zestaw()
+	_zapas_startowy()
+	if zapis_wlaczony and wczytaj_baze():
+		if na_wyprawie and not FileAccess.file_exists(PLIK_BIWAKU):
+			# gra została zamknięta w lochu bez biwaku: żołnierz nie wrócił
+			po_smierci()
+			komunikat_startowy = "POLEGL_BEZ_BIWAKU"
+			zapisz_baze()
+
+
+## Pierwsze wyposażenie skrytki w nowej kampanii.
+func _zapas_startowy() -> void:
+	for i in 4:
+		skrytka.wloz_gdziekolwiek(nowy_magazynek("mag_kwarc", "A_556_FMJ"))
+	for i in 2:
+		skrytka.wloz_gdziekolwiek(nowy_magazynek("mag_jaspis", "A_9_FMJ"))
+	for id in ["paczka_556", "paczka_556", "paczka_556"]:
+		skrytka.wloz_gdziekolwiek(nowa_paczka(id, "A_556_FMJ"))
+	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_556", "A_556_SS"))
+	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_556", "A_556_AP", 20))
+	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_9", "A_9_FMJ"))
+	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_9", "A_9_HP"))
+	for id in ["racja", "racja", "racja", "konserwa", "konserwa", "suchary", "manierka", "bandaz", "bandaz", "bandaz", "opatrunek", "opatrunek", "szyna", "apteczka", "przeciwbolowe", "pas", "chlebak", "plecak_patrolowy"]:
+		skrytka.wloz_gdziekolwiek(nowy(id))
 
 
 static func nowy(id: String, dane := {}) -> Dictionary:
-	return {"id": id, "x": 0, "y": 0, "obr": false, "dane": dane, "odkryty": true}
+	var d: Dictionary = dane.duplicate()
+	if PRZEDMIOTY[id].has("porcje") and not d.has("porcje"):
+		d["porcje"] = PRZEDMIOTY[id]["porcje"]
+	return {"id": id, "x": 0, "y": 0, "obr": false, "dane": d, "odkryty": true}
 
 
 func nowy_magazynek(id: String, typ_a: String, typ_b := "", ile := -1) -> Dictionary:
@@ -82,7 +126,10 @@ func nowy_zestaw() -> void:
 	plecak.wloz_gdziekolwiek(nowa_paczka("paczka_556", "A_556_FMJ"))
 	plecak.wloz_gdziekolwiek(nowa_paczka("paczka_556", "A_556_SS"))
 	plecak.wloz_gdziekolwiek(nowa_paczka("paczka_9", "A_9_FMJ"))
-	plecak.wloz_gdziekolwiek(nowy("konserwa"))
+	plecak.wloz_gdziekolwiek(nowy("racja"))
+	plecak.wloz_gdziekolwiek(nowy("manierka"))
+	sytosc = 100.0
+	nawodnienie = 100.0
 	stan_broni = {
 		"kwarc": {"mag": nowy_magazynek("mag_kwarc", "A_556_FMJ", "", 29), "komora": "A_556_FMJ"},
 		"jaspis": {"mag": nowy_magazynek("mag_jaspis", "A_9_FMJ", "", 14), "komora": "A_9_FMJ"},
@@ -97,6 +144,8 @@ func po_smierci() -> void:
 	nowy_zestaw()
 	for p in ocalone:
 		relikwiarz.wloz(p, p["x"], p["y"], p["obr"])
+	na_wyprawie = false
+	polegli += 1
 	zmiana.emit()
 
 
@@ -153,6 +202,8 @@ func masa_przedmiotu(p: Dictionary) -> float:
 		m += dane["naboje"].size() * float(MASA_NABOJU[def["kaliber"]])
 	if dane.has("ile"):
 		m += int(dane["ile"]) * float(MASA_NABOJU[def["kaliber"]])
+	if dane.has("porcje"):
+		m += int(dane["porcje"]) * 0.33
 	if dane.has("pojemnik") and dane["pojemnik"] != null:
 		m += (dane["pojemnik"] as Pojemnik).masa()
 	return m
@@ -322,3 +373,137 @@ func opis_magazynka(p: Dictionary) -> String:
 	elif r > 0.0:
 		k = "MAG_PRAWIE_PUSTY"
 	return tr(k)
+
+
+# ====================================================================== noszone rzeczy
+
+## Zakłada kamizelkę albo plecak leżący w pojemniku `zrodlo`; stary trafia na jego miejsce.
+func zamien_noszone(p: Dictionary, zrodlo: Pojemnik) -> bool:
+	var typ: String = PRZEDMIOTY[p["id"]]["typ"]
+	if typ == "kamizelka":
+		var s: Vector2i = PRZEDMIOTY[p["id"]]["siatka"]
+		var nowa := Pojemnik.new(s.x, s.y, "E_KAMIZELKA")
+		var kolejka := kamizelka.rzeczy.duplicate()
+		kolejka.sort_custom(func(a, b): return Pojemnik.wymiary(a, false).y > Pojemnik.wymiary(b, false).y)
+		for r in kolejka:
+			if not nowa.wloz_gdziekolwiek(r.duplicate()):
+				return false
+		var stara := kamizelka_p
+		zrodlo.usun(p)
+		if not zrodlo.wloz_gdziekolwiek(stara):
+			zrodlo.wloz(p, p["x"], p["y"], p["obr"])
+			return false
+		kamizelka_p = p
+		kamizelka = nowa
+		zmiana.emit()
+		return true
+	if typ == "plecak":
+		var stary := plecak_p
+		zrodlo.usun(p)
+		if not stary.is_empty() and not zrodlo.wloz_gdziekolwiek(stary):
+			zrodlo.wloz(p, p["x"], p["y"], p["obr"])
+			return false
+		plecak_p = {}
+		_zaloz_plecak(p)
+		zmiana.emit()
+		return true
+	return false
+
+
+# ====================================================================== głód i pragnienie
+
+## Spożycie jedzenia albo picia. Zwraca false, gdy przedmiot się do tego nie nadaje.
+func spozyj(p: Dictionary) -> bool:
+	var def: Dictionary = PRZEDMIOTY[p["id"]]
+	if def["typ"] == "jedzenie":
+		sytosc = clampf(sytosc + float(def["sytosc"]), 0.0, 100.0)
+		nawodnienie = clampf(nawodnienie + float(def["woda"]), 0.0, 100.0)
+		wyjmij(p)
+		return true
+	if def["typ"] == "picie":
+		if int(p["dane"].get("porcje", 0)) <= 0:
+			return false
+		nawodnienie = clampf(nawodnienie + float(def["woda"]), 0.0, 100.0)
+		p["dane"]["porcje"] = int(p["dane"]["porcje"]) - 1
+		zmiana.emit()
+		return true
+	return false
+
+
+## Baza: manierki napełniają się przy studni.
+func napelnij_manierki() -> void:
+	for poj in pojemniki() + [skrytka]:
+		for p in poj.rzeczy:
+			if p["id"] == "manierka":
+				p["dane"]["porcje"] = PRZEDMIOTY["manierka"]["porcje"]
+
+
+# ====================================================================== zapis
+
+func _stan() -> Dictionary:
+	var bron := {}
+	for id in stan_broni:
+		bron[id] = {"mag": Pojemnik.przedmiot_do_danych(stan_broni[id]["mag"]), "komora": stan_broni[id]["komora"]}
+	return {
+		"wersja": 1, "kieszenie": kieszenie.do_danych(), "kamizelka": kamizelka.do_danych(),
+		"relikwiarz": relikwiarz.do_danych(), "skrytka": skrytka.do_danych(),
+		"kamizelka_p": Pojemnik.przedmiot_do_danych(kamizelka_p), "plecak_p": Pojemnik.przedmiot_do_danych(plecak_p),
+		"bron": bron, "sytosc": sytosc, "nawodnienie": nawodnienie, "na_wyprawie": na_wyprawie,
+		"wyprawy": wyprawy, "polegli": polegli,
+	}
+
+
+func _ustaw_stan(d: Dictionary) -> void:
+	kieszenie = Pojemnik.z_danych(d["kieszenie"])
+	kamizelka = Pojemnik.z_danych(d["kamizelka"])
+	relikwiarz = Pojemnik.z_danych(d["relikwiarz"])
+	skrytka = Pojemnik.z_danych(d["skrytka"])
+	kamizelka_p = Pojemnik.przedmiot_z_danych(d["kamizelka_p"])
+	plecak_p = Pojemnik.przedmiot_z_danych(d["plecak_p"])
+	plecak = null if plecak_p.is_empty() else plecak_p["dane"]["pojemnik"]
+	stan_broni = {}
+	for id in d["bron"]:
+		stan_broni[id] = {"mag": Pojemnik.przedmiot_z_danych(d["bron"][id]["mag"]), "komora": d["bron"][id]["komora"]}
+	sytosc = float(d["sytosc"])
+	nawodnienie = float(d["nawodnienie"])
+	na_wyprawie = bool(d["na_wyprawie"])
+	wyprawy = int(d.get("wyprawy", 0))
+	polegli = int(d.get("polegli", 0))
+	ladowanie = {}
+	zmiana.emit()
+
+
+func zapisz_baze() -> void:
+	if not zapis_wlaczony:
+		return
+	var f := FileAccess.open(PLIK_BAZY, FileAccess.WRITE)
+	if f:
+		f.store_string(var_to_str(_stan()))
+
+
+func wczytaj_baze() -> bool:
+	if not FileAccess.file_exists(PLIK_BAZY):
+		return false
+	var d = str_to_var(FileAccess.get_file_as_string(PLIK_BAZY))
+	if not (d is Dictionary) or int(d.get("wersja", 0)) != 1:
+		return false
+	_ustaw_stan(d)
+	return true
+
+
+## Biwak: zawieszenie wyprawy. Zapis znika przy wczytaniu.
+func zapisz_biwak(dane_swiata: Dictionary) -> void:
+	if not zapis_wlaczony:
+		return
+	zapisz_baze()
+	var f := FileAccess.open(PLIK_BIWAKU, FileAccess.WRITE)
+	if f:
+		f.store_string(var_to_str(dane_swiata))
+
+
+func wczytaj_biwak() -> Dictionary:
+	if not zapis_wlaczony or not FileAccess.file_exists(PLIK_BIWAKU):
+		return {}
+	var d = str_to_var(FileAccess.get_file_as_string(PLIK_BIWAKU))
+	DirAccess.remove_absolute(PLIK_BIWAKU)
+	return d if d is Dictionary else {}

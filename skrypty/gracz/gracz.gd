@@ -171,7 +171,7 @@ func _physics_process(dt: float) -> void:
 	if sprintuje:
 		wytrz_nogi = maxf(wytrz_nogi - 0.105 * dt, 0.0)
 	else:
-		var odp := 0.085 if predkosc_pozioma < 0.5 else 0.05
+		var odp := (0.085 if predkosc_pozioma < 0.5 else 0.05) * lerpf(1.0, 0.5, zdrowie.niedobor())
 		wytrz_nogi = minf(wytrz_nogi + odp * dt, 1.0)
 	if celuje:
 		wytrz_rece = maxf(wytrz_rece - 0.028 * dt, 0.0)

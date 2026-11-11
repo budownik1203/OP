@@ -138,3 +138,8 @@ x = sum(przesun(stuk(los.uniform(1400, 3200), 0.02, 0.07) * m, o, 0.3) for o, m 
 zapisz("zbroja", x, 0.5)
 x = filtr(szum(0.8), 1500, 6000) * (0.3 + 0.7 * np.abs(np.sin(2 * np.pi * 2.2 * t(0.8)))) * np.hanning(int(SR * 0.8))
 zapisz("lek", x, 0.3)
+
+# ---------------- build 4
+czas = t(2.4)
+x = (np.sin(2 * np.pi * 38 * czas) + 0.6 * np.sin(2 * np.pi * 51 * czas + 1.0)) * (0.6 + 0.4 * np.sin(2 * np.pi * 0.9 * czas)) + filtr(szum(2.4), gora=120) * 1.5
+zapisz("dudnienie", x * np.hanning(len(czas)), 0.8)

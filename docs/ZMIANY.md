@@ -1,5 +1,38 @@
 # Lista zmian
 
+## Build 4 — Ekstrakcja (2026-11-11)
+
+Pierwsza zamknięta pętla: baza → odprawa → kopalnia → wyjście z łupem → skrytka → kolejna wyprawa.
+
+**Baza**
+- Strzelnica jest teraz bazą. Pod wiatą stoi skrytka (10×14 pól) z zapasem startowym.
+- Dwuklik w ekwipunku: lek leczy, jedzenie i picie są spożywane, kamizelka i plecak zakładane.
+- Zamiana kamizelki przenosi zawartość do nowej, o ile się mieści; zamiana plecaka odkłada stary razem z zawartością.
+- Brama otwiera odprawę: cel, obciążenie, liczba magazynków pod ręką, ostrzeżenia o braku jedzenia, wody i opatrunków.
+- Stan bazy i żołnierza zapisuje się na dysk przy każdym powrocie i przy wyjściu z gry w bazie.
+
+**Wyprawa**
+- Trzy wyjścia z kopalni: drabina przy wejściu, krata szybu (zużywa żelazny klucz) i stary chodnik.
+- Przebudzenie lochu: rośnie z czasem (pełne po 40 minutach) i od hałasu (wystrzał bez tłumika ok. +1,4 pkt).
+- Progi 25/50/75/100: z głębi wychodzą kolejni wrogowie i idą w stronę gracza; przy 50 stary chodnik się zawala; przy 100 ghule napływają co 45 s.
+- Cztery znaczniki Przebudzenia w prawym górnym rogu.
+- Wyniesiony łup zostaje. Śmierć zabiera wszystko poza relikwiarzem.
+- Zamknięcie gry w lochu bez biwaku oznacza stratę żołnierza przy następnym uruchomieniu.
+
+**Głód i pragnienie**
+- Płyną tylko na wyprawie: woda wystarcza na 30 minut, jedzenie na 55.
+- Poniżej 25% rośnie kołysanie broni i wolniej wraca wytrzymałość; przy zerze ubywa zdrowia.
+- Racja żywnościowa, konserwa, suchary, manierka na trzy porcje (napełniana w bazie), bukłak.
+
+**Biwak**
+- W jednej z komór jest palenisko. Odpoczynek przywraca wytrzymałość i zmniejsza ból, ale podnosi Przebudzenie.
+- „Zapisz i zakończ grę” zawiesza wyprawę: zapisuje ekwipunek, rany, Przebudzenie, zabitych wrogów i skrzynie. Zapis znika po wczytaniu.
+
+**Znane braki**
+- Po wznowieniu z biwaku wrogowie wypuszczeni przez Przebudzenie i przedmioty leżące na ziemi nie wracają.
+- Rany leczą się same po powrocie do bazy; lazaret przyjdzie z plutonem w buildzie 6.
+- Baza nie ma jeszcze osobnej lokacji ani pozostałych żołnierzy.
+
 ## Build 3 — Ekwipunek (2026-11-11)
 
 **Siatka przedmiotów (Tab)**

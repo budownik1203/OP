@@ -4,6 +4,8 @@ Gra FPP dla jednego gracza: polski pluton współczesnego wojska odcięty w umie
 
 ## Stan
 
+**Build 4 — Ekstrakcja.** Baza ze skrytką, odprawa, trzy wyjścia z kopalni, Przebudzenie lochu, głód i pragnienie, biwak z zapisem, zapis stanu bazy.
+
 **Build 3 — Ekwipunek.** Siatka przedmiotów z kieszeniami, kamizelką, plecakiem i relikwiarzem, magazynki i leki jako przedmioty, waga, skrzynie i zwłoki do przeszukania.
 
 **Build 2 — Pierwszy loch.** Strzelnica z builda 1 oraz kopalnia z trzema wrogami (ghul, umarły knecht, upadły rycerz), pancerzem strefowym, rozczłonkowaniem, zdrowiem strefowym gracza i lekami. Do kopalni schodzi się przez bramę za plecami na strzelnicy (F).
@@ -33,7 +35,7 @@ Plan kolejnych buildów: `docs/PLAN.md`. Lista zmian: `docs/ZMIANY.md`. Projekt 
 | B | Tryb ognia |
 | 1 / 2 | Karabinek / pistolet |
 | 4–8 | Leki: bandaż, opatrunek, szyna, apteczka, przeciwbólowe |
-| Tab | Ekwipunek (LPM przeciąga, R obraca, Ctrl+LPM przenosi, PPM wyrzuca) |
+| Tab | Ekwipunek (LPM przeciąga, R obraca, Ctrl+LPM przenosi, PPM wyrzuca, dwuklik używa lub zakłada) |
 | Z | Zrzucenie plecaka |
 | L | Latarka |
 | F | Użyj, podnieś, przeszukaj |

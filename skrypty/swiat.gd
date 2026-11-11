@@ -2,6 +2,8 @@ class_name Swiat
 extends Node3D
 ## Wspólna część każdej lokacji: gracz, broń, ślady po kulach, łuski, krew, hałas.
 
+signal komunikat_swiata(tekst: String)
+
 const MAKS_SLADOW := 500
 const MAKS_LUSEK := 40
 
@@ -9,6 +11,7 @@ var gracz: Gracz
 var bronie: Array[Bron] = []
 var aktywna := 0
 var wrogowie: Array = []
+var wyprawa := false            ## true w lochu: płynie głód i pragnienie
 
 var _slady: Array[MeshInstance3D] = []
 var _i_slad := 0

@@ -21,6 +21,7 @@ var kontener: SubViewportContainer
 var widok: SubViewport
 var swiat: Swiat
 var nazwa_swiata := ""
+var _dane_biwaku := {}
 var hud: Hud
 var _mat_obrazu: ShaderMaterial
 
@@ -50,7 +51,15 @@ func _ready() -> void:
 		if a.begins_with("--swiat="):
 			start = a.trim_prefix("--swiat=")
 	hud.przygotuj(self)
+	var biwak := Ekwipunek.wczytaj_biwak()
+	if not biwak.is_empty():
+		_dane_biwaku = biwak
+		start = "kopalnia"
 	_zaladuj_swiat(start)
+	if not biwak.is_empty():
+		hud.komunikat(tr("BIWAK_WCZYTANO"))
+	elif Ekwipunek.komunikat_startowy != "":
+		hud.komunikat(tr(Ekwipunek.komunikat_startowy), 9.0)
 	_zastosuj_obraz()
 	Strojenie.zmieniono.connect(func(k): if k in ["S_PIKSEL", "S_DITHER"]: _zastosuj_obraz())
 	Jezyk.zmieniono.connect(func(): swiat.odswiez_napisy(); hud.odswiez())
@@ -72,8 +81,22 @@ func _zaladuj_swiat(nazwa: String) -> void:
 		widok.remove_child(swiat)
 		swiat.free()
 	nazwa_swiata = nazwa
-	swiat = Kopalnia.new() if nazwa == "kopalnia" else Strzelnica.new()
+	if nazwa == "kopalnia":
+		var k := Kopalnia.new()
+		k.dane_biwaku = _dane_biwaku
+		_dane_biwaku = {}
+		swiat = k
+	else:
+		swiat = Strzelnica.new()
 	widok.add_child(swiat)
+	swiat.komunikat_swiata.connect(func(t: String): hud.komunikat(t, 5.0))
+	if nazwa != "kopalnia":
+		# w bazie: woda ze studni i zapis stanu
+		Ekwipunek.na_wyprawie = false
+		Ekwipunek.napelnij_manierki()
+		Ekwipunek.sytosc = maxf(Ekwipunek.sytosc, 60.0)
+		Ekwipunek.nawodnienie = 100.0
+		Ekwipunek.zapisz_baze()
 	for b in swiat.bronie:
 		b.komunikat.connect(hud.komunikat)
 	var z := swiat.gracz.zdrowie
@@ -83,6 +106,37 @@ func _zaladuj_swiat(nazwa: String) -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	if nazwa == "kopalnia":
 		hud.komunikat(tr("KOPALNIA"))
+
+
+## Wyjście z bazy na wyprawę. Od tej chwili zamknięcie gry bez biwaku oznacza stratę żołnierza.
+func wyrusz() -> void:
+	for b in swiat.bronie:
+		b.zapisz_stan()
+	Ekwipunek.na_wyprawie = true
+	Ekwipunek.wyprawy += 1
+	Ekwipunek.zapisz_baze()
+	zmien_swiat("kopalnia")
+
+
+## Udany powrót z lochu z tym, co żołnierz ma przy sobie.
+func ewakuacja() -> void:
+	zmien_swiat("strzelnica")
+	hud.komunikat.call_deferred(tr("POWROT"), 5.0)
+
+
+## Biwak: zapis zawieszający wyprawę i wyjście z gry.
+func zapisz_biwak_i_wyjdz() -> void:
+	for b in swiat.bronie:
+		b.zapisz_stan()
+	Ekwipunek.zapisz_biwak((swiat as Kopalnia).stan_do_zapisu())
+	get_tree().quit()
+
+
+func _notification(co: int) -> void:
+	if co == NOTIFICATION_WM_CLOSE_REQUEST and swiat != null and nazwa_swiata != "kopalnia":
+		for b in swiat.bronie:
+			b.zapisz_stan()
+		Ekwipunek.zapisz_baze()
 
 
 func _smierc() -> void:

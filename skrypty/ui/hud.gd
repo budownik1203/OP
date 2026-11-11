@@ -30,6 +30,10 @@ var _blysk: ColorRect
 var _blysk_a := 0.0
 var _smierc: ColorRect
 var _smierc_tekst: Label
+var _potrzeby: Label
+var _budzenie: Array[ColorRect] = []
+var _panel_odprawa: PanelContainer
+var _panel_biwak: PanelContainer
 
 
 func przygotuj(g: Node) -> void:
@@ -97,6 +101,15 @@ func _zbuduj_zdrowie() -> void:
 	_leki.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_pasek_uzycia = _pasek(Color("b9b08f"))
 	_umiesc(_pasek_uzycia, Control.PRESET_CENTER, -150, 170, 300, 10)
+	_potrzeby = _etykieta(17, Color("d9a05a"))
+	_umiesc(_potrzeby, Control.PRESET_BOTTOM_LEFT, 34, -158, 400, 44)
+	# Przebudzenie lochu: cztery znaczniki w prawym górnym rogu
+	for i in 4:
+		var zn := ColorRect.new()
+		zn.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_korzen.add_child(zn)
+		_umiesc(zn, Control.PRESET_TOP_RIGHT, -130 + i * 24, 26, 16, 16)
+		_budzenie.append(zn)
 	_smierc = ColorRect.new()
 	_smierc.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_smierc.color = Color(0.03, 0.0, 0.0, 0.0)
@@ -160,6 +173,21 @@ func _odswiez_zdrowie(dt: float) -> void:
 	_pasek_uzycia.visible = z.uzywa != ""
 	if z.uzywa != "":
 		_pasek_uzycia.value = z.uzycie_t / z.uzycie_max
+	var potrzeby := []
+	if Ekwipunek.sytosc < 60.0:
+		potrzeby.append("%s %d%%" % [tr("GLOD"), roundi(100.0 - Ekwipunek.sytosc)])
+	if Ekwipunek.nawodnienie < 60.0:
+		potrzeby.append("%s %d%%" % [tr("PRAGNIENIE"), roundi(100.0 - Ekwipunek.nawodnienie)])
+	_potrzeby.text = " · ".join(potrzeby)
+	_potrzeby.add_theme_color_override("font_color", Color("c94b3a") if z.niedobor() > 0.0 else Color("d9a05a"))
+	var w_lochu: bool = gra.swiat is Kopalnia
+	for i in 4:
+		_budzenie[i].visible = w_lochu
+		if w_lochu:
+			var k: Kopalnia = gra.swiat
+			var pelny := k.przebudzenie >= (i + 1) * 25.0
+			var czesc := clampf((k.przebudzenie - i * 25.0) / 25.0, 0.0, 1.0)
+			_budzenie[i].color = Color("b33a2e") if pelny else Color(0.25, 0.23, 0.2, 0.35 + 0.4 * czesc)
 	_blysk_a = maxf(_blysk_a - dt * 0.9, 0.0)
 	var stale := z.odczuwany_bol() * 0.12 + (0.06 if z.krwawienie_ciezkie else 0.0)
 	_blysk.color.a = clampf(_blysk_a + stale, 0.0, 0.8)
@@ -299,7 +327,7 @@ func _fmt(x: float) -> String:
 
 
 func odswiez() -> void:
-	_wskazowka.text = tr("TYTUL") + " · build 3 · " + tr("PODPOWIEDZ_H")
+	_wskazowka.text = tr("TYTUL") + " · build 4 · " + tr("PODPOWIEDZ_H")
 	_et_nogi.text = tr("WYTRZ_NOGI")
 	_et_rece.text = tr("WYTRZ_RECE")
 	(_panel_pomoc.find_child("naglowek", true, false) as Label).text = tr("POMOC")
@@ -311,13 +339,13 @@ func odswiez() -> void:
 		_suwaki[k][0].text = tr(k)
 
 
-func komunikat(tekst: String) -> void:
+func komunikat(tekst: String, czas := 2.8) -> void:
 	_komunikat.text = tekst
-	_kom_t = 2.8
+	_kom_t = czas
 
 
 func panel_otwarty() -> bool:
-	return _panel_stroj.visible or _panel_pomoc.visible or ekwipunek.visible or (_panel_stol != null and _panel_stol.visible)
+	return _panel_stroj.visible or _panel_pomoc.visible or ekwipunek.visible or (_panel_stol != null and _panel_stol.visible) or (_panel_odprawa != null and _panel_odprawa.visible) or (_panel_biwak != null and _panel_biwak.visible)
 
 
 func zamknij_panele() -> bool:
@@ -331,6 +359,10 @@ func zamknij_panele() -> bool:
 		ekwipunek.zamknij()
 	if _panel_stol:
 		_panel_stol.visible = false
+	if _panel_odprawa:
+		_panel_odprawa.visible = false
+	if _panel_biwak:
+		_panel_biwak.visible = false
 	_wroc_do_gry()
 	return true
 
@@ -352,6 +384,80 @@ func przelacz_strojenie() -> void:
 		zamknij_panele()
 	else:
 		_otworz(_panel_stroj)
+
+
+func _przycisk(tekst: String, akcja: Callable) -> Button:
+	var b := Button.new()
+	b.text = tekst
+	b.add_theme_font_size_override("font_size", 22)
+	b.pressed.connect(akcja)
+	return b
+
+
+func _opis(tekst: String, rozmiar := 19, kolor := Color("cfc6ad")) -> Label:
+	var l := Label.new()
+	l.text = tekst
+	l.add_theme_font_size_override("font_size", rozmiar)
+	l.add_theme_color_override("font_color", kolor)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	return l
+
+
+## Odprawa przed wyprawą: cel, obciążenie i ostrzeżenia o brakach.
+func otworz_odprawe() -> void:
+	if _panel_odprawa:
+		_panel_odprawa.queue_free()
+	_panel_odprawa = _panel(640)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	_panel_odprawa.add_child(v)
+	v.add_child(_naglowek(tr("ODPRAWA")))
+	v.add_child(_opis(tr("ODPRAWA_CEL"), 22, Color("e6dcc0")))
+	v.add_child(_opis(tr("ODPRAWA_OPIS")))
+	v.add_child(_opis("%s: %.1f kg" % [tr("E_OBCIAZENIE"), Ekwipunek.masa()]))
+	v.add_child(_opis("%s: %d + %d" % [tr("ODPRAWA_MAG"), Ekwipunek.magazynki("kwarc").size(), Ekwipunek.magazynki("jaspis").size()]))
+	var jedzenie := 0
+	var woda := 0
+	for poj in Ekwipunek.pojemniki():
+		for p in poj.rzeczy:
+			var typ: String = Ekwipunek.PRZEDMIOTY[p["id"]]["typ"]
+			if typ == "jedzenie":
+				jedzenie += 1
+			elif typ == "picie":
+				woda += int(p["dane"].get("porcje", 0))
+	var leki := Ekwipunek.leki()
+	var ostrz := Color("d9a05a")
+	if jedzenie == 0:
+		v.add_child(_opis(tr("ODPRAWA_BRAK_JEDZENIA"), 19, ostrz))
+	if woda == 0:
+		v.add_child(_opis(tr("ODPRAWA_BRAK_WODY"), 19, ostrz))
+	if leki["bandaz"] + leki["opatrunek"] == 0:
+		v.add_child(_opis(tr("ODPRAWA_BRAK_LEKOW"), 19, ostrz))
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 14)
+	h.add_child(_przycisk(tr("WYRUSZ"), func():
+		zamknij_panele()
+		gra.wyrusz()))
+	h.add_child(_przycisk(tr("WROC"), zamknij_panele))
+	v.add_child(h)
+	_otworz(_panel_odprawa)
+
+
+func otworz_biwak() -> void:
+	if _panel_biwak:
+		_panel_biwak.queue_free()
+	_panel_biwak = _panel(640)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	_panel_biwak.add_child(v)
+	v.add_child(_naglowek(tr("BIWAK")))
+	v.add_child(_opis(tr("BIWAK_OPIS")))
+	v.add_child(_przycisk(tr("BIWAK_ODPOCZNIJ"), func():
+		(gra.swiat as Kopalnia).odpocznij()
+		zamknij_panele()))
+	v.add_child(_przycisk(tr("BIWAK_ZAPISZ"), func(): gra.zapisz_biwak_i_wyjdz()))
+	v.add_child(_przycisk(tr("WROC"), zamknij_panele))
+	_otworz(_panel_biwak)
 
 
 func przelacz_ekwipunek() -> void:

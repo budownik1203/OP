@@ -5,6 +5,7 @@ extends Swiat
 
 const DYSTANSE := [10.0, 25.0, 50.0, 100.0]
 var stol_pozycja := Vector3(3.2, 0.0, 2.2)
+var skrytka_pozycja := Vector3(-3.2, 0.0, 2.6)
 
 
 func _ready() -> void:
@@ -116,6 +117,20 @@ func _stanowisko() -> void:
 	_styl_napisu(napis, 0.004, Color("d8c9a0"))
 	napis.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
 	add_child(napis)
+	# skrytka: skrzynia wojskowa pod wiatą
+	var ziel := Mat.kolor(Color("36422a"), 0.8)
+	Mat.blok(self, Vector3(1.5, 0.55, 0.7), skrytka_pozycja + Vector3(0, 0.275, 0), ziel)
+	Mat.blok(self, Vector3(1.54, 0.08, 0.74), skrytka_pozycja + Vector3(0, 0.59, 0), Mat.kolor(Color("2c3622"), 0.8), false)
+	for x in [-0.5, 0.5]:
+		Mat.blok(self, Vector3(0.06, 0.14, 0.03), skrytka_pozycja + Vector3(x, 0.47, 0.36), Mat.kolor(Color("1c1d1e"), 0.5, 0.7), false)
+	var napis_s := Label3D.new()
+	napis_s.text = tr("E_SKRYTKA")
+	napis_s.set_meta("klucz", "E_SKRYTKA")
+	napis_s.add_to_group("napisy")
+	napis_s.position = skrytka_pozycja + Vector3(0.0, 1.15, 0.0)
+	_styl_napisu(napis_s, 0.004, Color("d8c9a0"))
+	napis_s.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	add_child(napis_s)
 	# kosze z ogniem
 	for x in [-5.4, 5.4]:
 		Mat.blok(self, Vector3(0.5, 0.7, 0.5), Vector3(x, 0.35, -2.6), Mat.kolor(Color("1d1b1a"), 0.7, 0.6))
@@ -251,7 +266,13 @@ func przy_bramie() -> bool:
 	return gracz.global_position.distance_to(Vector3(0.0, 0.0, 8.0)) < 2.4
 
 
+func przy_skrytce() -> bool:
+	return gracz.global_position.distance_to(skrytka_pozycja) < 2.0
+
+
 func podpowiedz() -> String:
+	if przy_skrytce():
+		return tr("E_SKRYTKA_PODP")
 	if przy_stole():
 		return tr("STOL_PODPOWIEDZ")
 	if przy_bramie():
@@ -260,10 +281,13 @@ func podpowiedz() -> String:
 
 
 func uzyj(gra: Node) -> bool:
+	if przy_skrytce():
+		gra.hud.otworz_ekwipunek(Ekwipunek.skrytka)
+		return true
 	if przy_stole():
 		gra.hud.otworz_stol()
 		return true
 	if przy_bramie():
-		gra.zmien_swiat("kopalnia")
+		gra.hud.otworz_odprawe()
 		return true
 	return false

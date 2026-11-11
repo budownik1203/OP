@@ -83,3 +83,48 @@ func masa() -> float:
 	for r in rzeczy:
 		m += Ekwipunek.masa_przedmiotu(r)
 	return m
+
+
+## Zapis do zwykłych danych (bez obiektów), żeby dało się je zapisać na dysk.
+func do_danych() -> Dictionary:
+	var l := []
+	for r in rzeczy:
+		l.append(przedmiot_do_danych(r))
+	return {"szer": szer, "wys": wys, "nazwa": nazwa, "tylko": tylko, "rzeczy": l}
+
+
+static func przedmiot_do_danych(r: Dictionary) -> Dictionary:
+	if r.is_empty():
+		return {}
+	var dane := {}
+	for k in r["dane"]:
+		var w = r["dane"][k]
+		if w is Pojemnik:
+			dane[k] = {"__pojemnik": (w as Pojemnik).do_danych()}
+		elif w is Array:
+			dane[k] = (w as Array).duplicate()
+		else:
+			dane[k] = w
+	return {"id": r["id"], "x": r["x"], "y": r["y"], "obr": r["obr"], "odkryty": r.get("odkryty", true), "dane": dane}
+
+
+static func z_danych(d: Dictionary) -> Pojemnik:
+	var p := Pojemnik.new(int(d["szer"]), int(d["wys"]), d["nazwa"])
+	p.tylko = d.get("tylko", "")
+	for r in d["rzeczy"]:
+		if Ekwipunek.PRZEDMIOTY.has(r["id"]):
+			p.rzeczy.append(przedmiot_z_danych(r))
+	return p
+
+
+static func przedmiot_z_danych(r: Dictionary) -> Dictionary:
+	if r.is_empty():
+		return {}
+	var dane := {}
+	for k in r["dane"]:
+		var w = r["dane"][k]
+		if w is Dictionary and (w as Dictionary).has("__pojemnik"):
+			dane[k] = z_danych(w["__pojemnik"])
+		else:
+			dane[k] = w
+	return {"id": r["id"], "x": int(r["x"]), "y": int(r["y"]), "obr": bool(r["obr"]), "odkryty": bool(r.get("odkryty", true)), "dane": dane}
