@@ -15,7 +15,7 @@ const DANE := {
 		"model": "res://zasoby/modele/kwarc.glb",
 		"biodro": Vector3(0.105, -0.158, -0.225), "biodro_rot": Vector3(0.0, 0.045, -0.06),
 		"t_takt": 2.9, "t_szybkie": 2.0, "rozrzut_moa": 2.5,
-		"dzw_strzal": "strzal_556", "skok_zamka": 0.07, "zoom": 0.84, "zamek_zostaje": false,
+		"dzw_strzal": "strzal_556", "skok_zamka": 0.07, "zoom": 0.84, "zamek_zostaje": false, "szyna": Vector3(0, 0.11, 0.0395),
 		"luska": Vector3(0.0057, 0.0057, 0.045),
 	},
 	"jaspis": {
@@ -48,7 +48,7 @@ const DANE := {
 		"model": "res://zasoby/modele/gabro.glb",
 		"biodro": Vector3(0.095, -0.150, -0.30), "biodro_rot": Vector3(0.0, 0.04, -0.06),
 		"t_takt": 2.5, "t_szybkie": 1.8, "rozrzut_moa": 4.0,
-		"dzw_strzal": "strzal_9", "skok_zamka": 0.05, "zoom": 0.88, "zamek_zostaje": false,
+		"dzw_strzal": "strzal_9", "skok_zamka": 0.05, "zoom": 0.88, "zamek_zostaje": false, "szyna": Vector3(0, 0.11, 0.024),
 		"luska": Vector3(0.0095, 0.0095, 0.019),
 	},
 	"granit": {
@@ -59,7 +59,7 @@ const DANE := {
 		"model": "res://zasoby/modele/granit.glb",
 		"biodro": Vector3(0.105, -0.158, -0.225), "biodro_rot": Vector3(0.0, 0.045, -0.06),
 		"t_takt": 3.0, "t_szybkie": 2.1, "rozrzut_moa": 3.5,
-		"dzw_strzal": "strzal_762", "skok_zamka": 0.075, "zoom": 0.84, "zamek_zostaje": false,
+		"dzw_strzal": "strzal_762", "skok_zamka": 0.075, "zoom": 0.84, "zamek_zostaje": false, "szyna": Vector3(0, 0.11, 0.036),
 		"luska": Vector3(0.0065, 0.0065, 0.039),
 	},
 	"lupek": {
@@ -161,6 +161,7 @@ func przygotuj(id_broni: String, wlasciciel: Gracz) -> void:
 	komora = st["komora"]
 	_ustaw_mag(st["mag"])
 	typ_ladowany = d["amunicja"]
+	_zamontuj_dodatki()
 	_zbuduj_blysk()
 	_zbuduj_latarke()
 	visible = false
@@ -267,6 +268,66 @@ func _zbuduj_latarke() -> void:
 	_latarka.add_child(poswiata)
 
 
+var tlumik := false
+var kolimator := false
+
+
+## Buduje na modelu zamontowane dodatki: tłumik na wylocie, kolimator na szynie.
+func _zamontuj_dodatki() -> void:
+	var metal := Mat.kolor(Color("1b1c1e"), 0.55, 0.6)
+	var id_tl := Ekwipunek.ma_dodatek(id, "wylot")
+	if id_tl != "":
+		tlumik = true
+		var dl := 0.17 if id_tl == "tlumik_kar" else 0.13
+		var s := MeshInstance3D.new()
+		var cm := CylinderMesh.new()
+		cm.top_radius = 0.019 if id_tl == "tlumik_kar" else 0.016
+		cm.bottom_radius = cm.top_radius
+		cm.height = dl
+		cm.radial_segments = 10
+		cm.rings = 1
+		s.mesh = cm
+		s.material_override = metal
+		s.rotation.x = PI * 0.5
+		s.position = Vector3(0, 0, -dl * 0.5 + 0.02)
+		_ustaw_czesc(s)
+		_wylot.add_child(s)
+	if Ekwipunek.ma_dodatek(id, "szyna") != "" and d.has("szyna"):
+		kolimator = true
+		var sz: Vector3 = d["szyna"]
+		var k := Node3D.new()
+		k.position = Vector3(sz.x, sz.z, -sz.y)       # Blender (x, y, z) -> Godot (x, z, -y)
+		_model.add_child(k)
+		for cz in [[Vector3(0.030, 0.012, 0.052), Vector3(0, 0.006, 0)], [Vector3(0.003, 0.030, 0.006), Vector3(-0.0145, 0.027, -0.021)],
+				[Vector3(0.003, 0.030, 0.006), Vector3(0.0145, 0.027, -0.021)], [Vector3(0.032, 0.003, 0.006), Vector3(0, 0.0435, -0.021)]]:
+			var si := MeshInstance3D.new()
+			var bm := BoxMesh.new()
+			bm.size = cz[0]
+			si.mesh = bm
+			si.material_override = metal
+			si.position = cz[1]
+			_ustaw_czesc(si)
+			k.add_child(si)
+		var kropka := MeshInstance3D.new()
+		var qm := QuadMesh.new()
+		qm.size = Vector2(0.0022, 0.0022)
+		kropka.mesh = qm
+		kropka.material_override = Mat.swiecacy(Color(1.0, 0.12, 0.08), 3.0)
+		kropka.position = Vector3(0, 0.030, -0.021)
+		kropka.rotation.y = PI
+		_ustaw_czesc(kropka)
+		k.add_child(kropka)
+		(kropka.material_override as StandardMaterial3D).cull_mode = BaseMaterial3D.CULL_DISABLED
+		# oko na wysokości kropki: linia celowania biegnie przez kolimator
+		_poz_cel.y = -(sz.z + 0.030)
+
+
+func _ustaw_czesc(s: MeshInstance3D) -> void:
+	s.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	s.extra_cull_margin = 2.0
+	s.layers = 1 | 2
+
+
 func _ustaw_mag(p: Dictionary) -> void:
 	mag_p = p
 	mag = null if p.is_empty() else p["dane"]["naboje"]
@@ -276,7 +337,9 @@ func _ustaw_mag(p: Dictionary) -> void:
 
 ## Zapisuje stan broni do ekwipunku (przed zmianą lokacji).
 func zapisz_stan() -> void:
-	Ekwipunek.stan_broni[id] = {"mag": mag_p, "komora": komora}
+	var st := Ekwipunek.stan(id)
+	st["mag"] = mag_p
+	st["komora"] = komora
 
 
 ## Stół amunicyjny: napełnia wszystkie magazynki tej broni. typ_b: przeplot 2:1.
@@ -340,7 +403,7 @@ func _process(dt: float) -> void:
 func _sprawdz_sciane(dt: float) -> void:
 	var kam := gracz.kamera
 	var od := kam.global_position
-	var dl: float = d["dlugosc"] * lerpf(1.0, 0.82, cel)
+	var dl: float = (d["dlugosc"] + (0.14 if tlumik else 0.0)) * lerpf(1.0, 0.82, cel)
 	var q := PhysicsRayQueryParameters3D.create(od, od - kam.global_transform.basis.z * dl)
 	q.exclude = [gracz.get_rid()]
 	q.collision_mask = 1
@@ -359,7 +422,7 @@ func _obsluz_wejscie(dt: float, steruje: bool) -> void:
 	if test_cel >= 0.0:
 		chce_cel = test_cel > 0.5
 	gracz.celuje = chce_cel and aktywna
-	var szybkosc: float = Strojenie.w["S_CELOWANIE"] / d["czas_celu"]
+	var szybkosc: float = Strojenie.w["S_CELOWANIE"] / (d["czas_celu"] * (0.85 if kolimator else 1.0))
 	cel = move_toward(cel, 1.0 if chce_cel else 0.0, dt * szybkosc)
 	if not steruje:
 		return
@@ -588,7 +651,7 @@ func _strzal() -> void:
 	var postawa := 0.78 if gracz.kuca else 1.0
 	var rece := lerpf(1.4, 1.0, gracz.wytrz_rece)
 	var w_celu := lerpf(1.0, 0.72, cel)
-	var moc := s * postawa * rece * w_celu
+	var moc := s * postawa * rece * w_celu * Ekwipunek.mod("odrzut") * (0.9 if tlumik else 1.0)
 	_odrz_poz.v.z += 0.95 * d["odrzut_tyl"] * moc
 	_odrz_poz.v.y += 0.12 * d["odrzut_pion"] * moc
 	_odrz_rot.v.x += 1.05 * d["odrzut_pion"] * moc
@@ -596,13 +659,15 @@ func _strzal() -> void:
 	_odrz_rot.v.z += randf_range(-1.0, 1.0) * 0.9 * moc
 	gracz.kopniecie(d["odrzut_kamera"] * postawa * rece, randf_range(-0.35, 0.35) * d["odrzut_bok"])
 	# efekty
-	_blysk_t = 0.045
+	_blysk_t = 0.0 if tlumik else 0.045
 	_blysk.rotation.z = randf() * TAU
 	_blysk.scale = Vector3.ONE * randf_range(0.8, 1.25)
-	Dzwiek.przy_uchu(d["dzw_strzal"], 0.0, 0.035)
+	Dzwiek.przy_uchu(d["dzw_strzal"], -13.0 if tlumik else 0.0, 0.035)
+	if tlumik:
+		Dzwiek.przy_uchu("zamek", -9.0, 0.1)
 	var swiat_h := get_tree().get_first_node_in_group("swiat")
 	if swiat_h:
-		swiat_h.halas(gracz.global_position, 55.0 * float(dane_a["halas"]))
+		swiat_h.halas(gracz.global_position, 55.0 * float(dane_a["halas"]) * (0.35 if tlumik else 1.0))
 	if not d.has("repetowanie"):
 		_wyrzuc_luske()
 	if swiat_h:

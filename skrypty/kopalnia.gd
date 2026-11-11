@@ -158,7 +158,7 @@ func _kuj(gra: Node, z: Dictionary) -> void:
 	if Ekwipunek.ile_zasobu("kilof") <= 0:
 		gra.hud.komunikat(tr("ZYLA_BRAK_KILOFA"))
 		return
-	gracz.zdrowie.zacznij_czynnosc("KUCIE", 7.0, func():
+	gracz.zdrowie.zacznij_czynnosc("KUCIE", 7.0 * Ekwipunek.mod("kucie"), func():
 		z["ile"] = int(z["ile"]) - 1
 		var id: String = z["id"]
 		if Ekwipunek.dodaj_zasob(id, 1) > 0:

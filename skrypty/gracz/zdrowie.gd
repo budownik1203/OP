@@ -160,7 +160,7 @@ func zacznij_uzycie(lek: String) -> void:
 		return
 	uzywa = lek
 	uzycie_t = 0.0
-	uzycie_max = LEKI[lek][1]
+	uzycie_max = LEKI[lek][1] * Ekwipunek.mod("leczenie")
 	Dzwiek.przy_uchu("lek", -6.0)
 	zmiana.emit()
 
@@ -271,7 +271,7 @@ func moze_sprintowac() -> bool:
 
 ## Mnożnik kołysania broni: ból i uszkodzone ręce.
 func mnoznik_kolysania() -> float:
-	var m := 1.0 + odczuwany_bol() * 1.5 + niedobor() * 1.2
+	var m := (1.0 + odczuwany_bol() * 1.5 + niedobor() * 1.2) * Ekwipunek.mod("kolysanie")
 	for r in ["reka_l", "reka_p"]:
 		if zlamania.has(r) or hp[r] <= 0.0:
 			m += 1.2
@@ -280,3 +280,21 @@ func mnoznik_kolysania() -> float:
 
 func odczuwany_bol() -> float:
 	return bol * (0.25 if znieczulenie > 0.0 else 1.0)
+
+
+## Na ile wypraw żołnierz trafia do lazaretu po powrocie w tym stanie.
+func rany_po_powrocie() -> int:
+	var suma := 0.0
+	var maks := 0.0
+	var zniszczone := false
+	for k in hp:
+		suma += hp[k]
+		maks += MAKS[k]
+		if hp[k] <= 0.0:
+			zniszczone = true
+	var u := suma / maks
+	if zniszczone or u < 0.55 or not zlamania.is_empty():
+		return 2
+	if u < 0.85 or krwawienie_ciezkie:
+		return 1
+	return 0

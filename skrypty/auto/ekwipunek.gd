@@ -51,6 +51,9 @@ const PRZEDMIOTY := {
 	"kosc": {"nazwa": "P_KOSC", "w": 1, "h": 1, "masa": 0.3, "typ": "surowiec", "kolor": "b9b29a", "stos": 6},
 	"sciegna": {"nazwa": "P_SCIEGNA", "w": 1, "h": 1, "masa": 0.1, "typ": "surowiec", "kolor": "8a5a52", "stos": 6},
 	"gruczol": {"nazwa": "P_GRUCZOL", "w": 1, "h": 1, "masa": 0.15, "typ": "surowiec", "kolor": "5a7a3a", "stos": 4},
+	"kolimator": {"nazwa": "P_KOLIMATOR", "w": 1, "h": 1, "masa": 0.12, "typ": "dodatek", "kolor": "2a2c30", "slot": "szyna", "pasuje": ["kwarc", "granit", "gabro"]},
+	"tlumik_9": {"nazwa": "P_TLUMIK_9", "w": 1, "h": 1, "masa": 0.20, "typ": "dodatek", "kolor": "1f2022", "slot": "wylot", "pasuje": ["jaspis", "gabro"]},
+	"tlumik_kar": {"nazwa": "P_TLUMIK_KAR", "w": 1, "h": 2, "masa": 0.45, "typ": "dodatek", "kolor": "1f2022", "slot": "wylot", "pasuje": ["kwarc", "granit"]},
 	"monety": {"nazwa": "P_MONETY", "w": 1, "h": 1, "masa": 0.15, "typ": "lup", "kolor": "8f7a2e"},
 	"relikwia": {"nazwa": "P_RELIKWIA", "w": 1, "h": 2, "masa": 0.60, "typ": "lup", "kolor": "6e5a7a"},
 	"klucz": {"nazwa": "P_KLUCZ", "w": 1, "h": 1, "masa": 0.05, "typ": "lup", "kolor": "5c5f63"},
@@ -95,6 +98,7 @@ func _ready() -> void:
 	skrytka = Pojemnik.new(10, 14, "E_SKRYTKA")
 	nowy_zestaw()
 	_zapas_startowy()
+	nowy_pluton()
 	if zapis_wlaczony and wczytaj_baze():
 		if na_wyprawie and not FileAccess.file_exists(PLIK_BIWAKU):
 			# gra została zamknięta w lochu bez biwaku: żołnierz nie wrócił
@@ -116,6 +120,10 @@ func _zapas_startowy() -> void:
 	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_9", "A_9_FMJ"))
 	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_9", "A_9_HP"))
 	skrytka.wloz_gdziekolwiek(nowy("kilof"))
+	skrytka.wloz_gdziekolwiek(nowy("kolimator"))
+	skrytka.wloz_gdziekolwiek(nowy("tlumik_9"))
+	for id in ["konserwa", "konserwa", "suchary", "suchary", "racja"]:
+		skrytka.wloz_gdziekolwiek(nowy(id))
 	for i in 4:
 		skrytka.wloz_gdziekolwiek(nowy_magazynek("mag_granit", "A_762_PS"))
 		skrytka.wloz_gdziekolwiek(nowy_magazynek("mag_gabro", "A_9_FMJ"))
@@ -195,6 +203,9 @@ func po_smierci() -> void:
 		relikwiarz.wloz(p, p["x"], p["y"], p["obr"])
 	na_wyprawie = false
 	polegli += 1
+	if not pluton.is_empty():
+		pluton[aktywny]["zyje"] = false
+		rozlicz_wyprawe(0)
 	zmiana.emit()
 
 
@@ -299,7 +310,7 @@ func moze_sprintowac() -> bool:
 
 
 func mnoznik_halasu() -> float:
-	return 1.0 + clampf((masa() - 15.0) / 30.0, 0.0, 1.0) * 0.8
+	return (1.0 + clampf((masa() - 15.0) / 30.0, 0.0, 1.0) * 0.8) * mod("halas")
 
 
 ## Magazynki do danej broni dostępne od ręki (kamizelka i kieszenie).
@@ -511,13 +522,13 @@ func napelnij_manierki() -> void:
 func _stan() -> Dictionary:
 	var bron := {}
 	for id in stan_broni:
-		bron[id] = {"mag": Pojemnik.przedmiot_do_danych(stan_broni[id]["mag"]), "komora": stan_broni[id]["komora"]}
+		bron[id] = {"mag": Pojemnik.przedmiot_do_danych(stan_broni[id]["mag"]), "komora": stan_broni[id]["komora"], "dodatki": stan_broni[id].get("dodatki", [])}
 	return {
 		"wersja": 2, "glowna": bron_glowna, "boczna": bron_boczna, "kieszenie": kieszenie.do_danych(), "kamizelka": kamizelka.do_danych(),
 		"relikwiarz": relikwiarz.do_danych(), "skrytka": skrytka.do_danych(),
 		"kamizelka_p": Pojemnik.przedmiot_do_danych(kamizelka_p), "plecak_p": Pojemnik.przedmiot_do_danych(plecak_p),
 		"bron": bron, "sytosc": sytosc, "nawodnienie": nawodnienie, "na_wyprawie": na_wyprawie,
-		"wyprawy": wyprawy, "polegli": polegli,
+		"wyprawy": wyprawy, "polegli": polegli, "pluton": pluton, "aktywny": aktywny, "zwiad": zwiad, "raport": raport,
 	}
 
 
@@ -531,7 +542,7 @@ func _ustaw_stan(d: Dictionary) -> void:
 	plecak = null if plecak_p.is_empty() else plecak_p["dane"]["pojemnik"]
 	stan_broni = {}
 	for id in d["bron"]:
-		stan_broni[id] = {"mag": Pojemnik.przedmiot_z_danych(d["bron"][id]["mag"]), "komora": d["bron"][id]["komora"]}
+		stan_broni[id] = {"mag": Pojemnik.przedmiot_z_danych(d["bron"][id]["mag"]), "komora": d["bron"][id]["komora"], "dodatki": d["bron"][id].get("dodatki", [])}
 	bron_glowna = d.get("glowna", "kwarc")
 	bron_boczna = d.get("boczna", "jaspis")
 	sytosc = float(d["sytosc"])
@@ -539,6 +550,11 @@ func _ustaw_stan(d: Dictionary) -> void:
 	na_wyprawie = bool(d["na_wyprawie"])
 	wyprawy = int(d.get("wyprawy", 0))
 	polegli = int(d.get("polegli", 0))
+	if d.has("pluton"):
+		pluton = d["pluton"]
+		aktywny = int(d.get("aktywny", 0))
+	zwiad = bool(d.get("zwiad", false))
+	raport = d.get("raport", [])
 	ladowanie = {}
 	zmiana.emit()
 
@@ -670,3 +686,219 @@ func dodaj_naboje(typ: String, ile: int, do_skrytki := false) -> int:
 		ile -= daj
 	zmiana.emit()
 	return ile
+
+
+# ====================================================================== pluton
+
+const SKLAD := [
+	["kpr. Marek Wilk", "strzelec"], ["st. szer. Tomasz Sowa", "zwiadowca"], ["szer. Paweł Dąb", "saper"],
+	["kpr. Anna Lis", "sanitariusz"], ["plut. Jan Kruk", "wyborowy"], ["st. szer. Adam Bóbr", "rusznikarz"],
+]
+const ZADANIA := ["Z_ODPOCZYNEK", "Z_AMUNICJA", "Z_WYTOP", "Z_APROWIZACJA", "Z_ZWIAD"]
+
+var pluton: Array = []          ## {imie, spec, zyje, rany (wyprawy do wyleczenia), wyprawy, zadanie}
+var aktywny := 0                ## kto idzie na wyprawę
+var zwiad := false              ## wynik zwiadu na najbliższą wyprawę
+var raport: Array = []          ## co pluton zrobił podczas ostatniej wyprawy
+
+
+func nowy_pluton() -> void:
+	pluton = []
+	for s in SKLAD:
+		pluton.append({"imie": s[0], "spec": s[1], "zyje": true, "rany": 0, "wyprawy": 0, "zadanie": 0})
+	aktywny = 0
+	zwiad = false
+	raport = []
+
+
+func zolnierz() -> Dictionary:
+	return pluton[aktywny] if not pluton.is_empty() else {}
+
+
+func spec() -> String:
+	return zolnierz().get("spec", "")
+
+
+## Premie specjalności żołnierza, który jest na wyprawie.
+func mod(co: String) -> float:
+	match [co, spec()]:
+		["odrzut", "strzelec"]:
+			return 0.85
+		["kolysanie", "wyborowy"]:
+			return 0.7
+		["leczenie", "sanitariusz"]:
+			return 0.6
+		["kucie", "saper"]:
+			return 0.6
+		["halas", "zwiadowca"]:
+			return 0.7
+	return 1.0
+
+
+func zywi() -> int:
+	var n := 0
+	for z in pluton:
+		if z["zyje"]:
+			n += 1
+	return n
+
+
+func koniec_kampanii() -> bool:
+	return zywi() == 0
+
+
+## Wyznacza żołnierza na wyprawę. Ranny może iść tylko wtedy, gdy nie ma zdrowych.
+func wyznacz(i: int) -> bool:
+	var z: Dictionary = pluton[i]
+	if not z["zyje"]:
+		return false
+	if int(z["rany"]) > 0 and _jest_zdrowy():
+		return false
+	aktywny = i
+	zmiana.emit()
+	return true
+
+
+func _jest_zdrowy() -> bool:
+	for z in pluton:
+		if z["zyje"] and int(z["rany"]) == 0:
+			return true
+	return false
+
+
+func _wybierz_nastepnego() -> void:
+	var najlepszy := -1
+	for i in pluton.size():
+		var z: Dictionary = pluton[i]
+		if z["zyje"] and (najlepszy < 0 or int(z["rany"]) < int(pluton[najlepszy]["rany"])):
+			najlepszy = i
+	if najlepszy >= 0:
+		aktywny = najlepszy
+
+
+func _zjedz_ze_skrytki() -> bool:
+	for p in skrytka.rzeczy:
+		if PRZEDMIOTY[p["id"]]["typ"] == "jedzenie":
+			skrytka.usun(p)
+			return true
+	return false
+
+
+## Rozliczenie po wyprawie: żołnierze w bazie jedzą, leczą się i wykonują zadania.
+## rany_aktywnego: na ile wypraw wracający żołnierz trafia do lazaretu.
+func rozlicz_wyprawe(rany_aktywnego: int) -> void:
+	raport = []
+	for i in pluton.size():
+		var z: Dictionary = pluton[i]
+		if not z["zyje"] or i == aktywny:
+			continue
+		var nazwisko: String = z["imie"]
+		if int(z["rany"]) > 0:
+			z["rany"] = maxi(int(z["rany"]) - 1, 0)
+			raport.append([nazwisko, "R_LAZARET" if int(z["rany"]) > 0 else "R_WYLECZONY", ""])
+			continue
+		if not _zjedz_ze_skrytki():
+			raport.append([nazwisko, "R_GLOD", ""])
+			continue
+		raport.append([nazwisko, ZADANIA[int(z["zadanie"])], _wykonaj_zadanie(z)])
+	var a: Dictionary = pluton[aktywny]
+	if a["zyje"]:
+		a["wyprawy"] = int(a["wyprawy"]) + 1
+		a["rany"] = rany_aktywnego
+		if rany_aktywnego > 0:
+			raport.append([a["imie"], "R_RANNY", str(rany_aktywnego)])
+	if not a["zyje"] or rany_aktywnego > 0:
+		_wybierz_nastepnego()
+	zmiana.emit()
+
+
+func _wykonaj_zadanie(z: Dictionary) -> String:
+	var premia: int = 1 if z["spec"] == "rusznikarz" else 0
+	match ZADANIA[int(z["zadanie"])]:
+		"Z_AMUNICJA":
+			var kal: String = Bron.DANE[bron_glowna]["kaliber"]
+			var zrobione := 0
+			for n in 2 + premia:
+				var ok := false
+				for r in Rzemioslo.receptury("stol"):
+					if r.has("naboje") and Amunicja.TYPY[r["naboje"][0]]["kaliber"] == kal and Rzemioslo.mozna(r, true):
+						Rzemioslo.wykonaj(r, true)
+						zrobione += int(r["naboje"][1])
+						ok = true
+						break
+				if ok:
+					continue
+				for r in Rzemioslo.receptury("stol"):
+					var jest_prochem: bool = r.has("wyjscie") and r["wyjscie"].has("proch")
+					var jest_luska: bool = r.has("wyjscie") and r["wyjscie"].has(Amunicja.luski(kal))
+					if (jest_prochem or jest_luska) and Rzemioslo.mozna(r, true):
+						Rzemioslo.wykonaj(r, true)
+						break
+			return str(zrobione)
+		"Z_WYTOP":
+			var sztabki := 0
+			for n in 6 + premia * 2:
+				for r in Rzemioslo.receptury("piec"):
+					if Rzemioslo.mozna(r, true):
+						Rzemioslo.wykonaj(r, true)
+						sztabki += 1
+						break
+			return str(sztabki)
+		"Z_APROWIZACJA":
+			for id in ["konserwa", "suchary", "suchary", "racja"]:
+				skrytka.wloz_gdziekolwiek(nowy(id))
+			skrytka.wloz_gdziekolwiek(nowy("wegiel", {"ile": 2}))
+			return "4"
+		"Z_ZWIAD":
+			zwiad = true
+	return ""
+
+
+## Nowa kampania po stracie całego plutonu.
+func nowa_kampania() -> void:
+	skrytka = Pojemnik.new(10, 14, "E_SKRYTKA")
+	stan_broni = {}
+	nowy_zestaw()
+	_zapas_startowy()
+	nowy_pluton()
+	wyprawy = 0
+	polegli = 0
+	na_wyprawie = false
+	if zapis_wlaczony:
+		DirAccess.remove_absolute(PLIK_BIWAKU)
+	zapisz_baze()
+
+
+# ====================================================================== dodatki do broni
+
+func dodatki(id_broni: String) -> Array:
+	return stan(id_broni).get("dodatki", [])
+
+
+func ma_dodatek(id_broni: String, slot: String) -> String:
+	for d in dodatki(id_broni):
+		if PRZEDMIOTY[d]["slot"] == slot:
+			return d
+	return ""
+
+
+func zamontuj(id_broni: String, p: Dictionary) -> bool:
+	var def: Dictionary = PRZEDMIOTY[p["id"]]
+	if def["typ"] != "dodatek" or not (id_broni in def["pasuje"]) or ma_dodatek(id_broni, def["slot"]) != "":
+		return false
+	wyjmij(p)
+	skrytka.usun(p)
+	var st := stan(id_broni)
+	st["dodatki"] = dodatki(id_broni) + [p["id"]]
+	zmiana.emit()
+	return true
+
+
+func zdejmij(id_broni: String, id_dodatku: String) -> void:
+	var st := stan(id_broni)
+	var l: Array = dodatki(id_broni).duplicate()
+	l.erase(id_dodatku)
+	st["dodatki"] = l
+	if not skrytka.wloz_gdziekolwiek(nowy(id_dodatku)):
+		podnies(nowy(id_dodatku))
+	zmiana.emit()

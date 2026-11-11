@@ -7,6 +7,7 @@ const DYSTANSE := [10.0, 25.0, 50.0, 100.0]
 var stol_pozycja := Vector3(3.2, 0.0, 2.2)
 var skrytka_pozycja := Vector3(-3.2, 0.0, 2.6)
 var piec_pozycja := Vector3(7.2, 0.0, 1.6)
+var tablica_pozycja := Vector3(-0.2, 0.0, 3.3)
 
 
 func _ready() -> void:
@@ -150,6 +151,18 @@ func _stanowisko() -> void:
 	_styl_napisu(napis_p, 0.004, Color("d8c9a0"))
 	napis_p.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
 	add_child(napis_p)
+	# tablica plutonu: deska z kartkami na tylnych słupach wiaty
+	Mat.blok(self, Vector3(1.8, 1.1, 0.06), tablica_pozycja + Vector3(0, 1.55, 0.25), dr)
+	for i in 6:
+		Mat.blok(self, Vector3(0.22, 0.30, 0.01), tablica_pozycja + Vector3(-0.66 + (i % 3) * 0.66, 1.78 - (i / 3) * 0.44, 0.215), Mat.kolor(Color("b9b29a"), 1.0), false)
+	var napis_t := Label3D.new()
+	napis_t.text = tr("PLUTON")
+	napis_t.set_meta("klucz", "PLUTON")
+	napis_t.add_to_group("napisy")
+	napis_t.position = tablica_pozycja + Vector3(0.0, 2.3, 0.2)
+	_styl_napisu(napis_t, 0.004, Color("d8c9a0"))
+	napis_t.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	add_child(napis_t)
 	# kosze z ogniem
 	for x in [-5.4, 5.4]:
 		Mat.blok(self, Vector3(0.5, 0.7, 0.5), Vector3(x, 0.35, -2.6), Mat.kolor(Color("1d1b1a"), 0.7, 0.6))
@@ -292,6 +305,8 @@ func przy_skrytce() -> bool:
 func podpowiedz() -> String:
 	if przy_skrytce():
 		return tr("E_SKRYTKA_PODP")
+	if gracz.global_position.distance_to(tablica_pozycja) < 1.7:
+		return tr("PLUTON_PODP")
 	if przy_stole():
 		return tr("STOL_PODPOWIEDZ")
 	if gracz.global_position.distance_to(piec_pozycja) < 2.4:
@@ -304,6 +319,9 @@ func podpowiedz() -> String:
 func uzyj(gra: Node) -> bool:
 	if przy_skrytce():
 		gra.hud.otworz_ekwipunek(Ekwipunek.skrytka)
+		return true
+	if gracz.global_position.distance_to(tablica_pozycja) < 1.7:
+		gra.hud.otworz_pluton()
 		return true
 	if przy_stole():
 		gra.hud.otworz_rzemioslo("stol", true)

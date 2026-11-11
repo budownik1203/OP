@@ -4,6 +4,8 @@ Gra FPP dla jednego gracza: polski pluton współczesnego wojska odcięty w umie
 
 ## Stan
 
+**Build 6a — Pluton i dodatki.** Sześciu żołnierzy ze specjalnościami, trwała śmierć, lazaret, zadania w bazie, koniec kampanii; kolimator i tłumiki montowane przy stole rusznikarskim.
+
 **Build 5 — Ruda i naboje.** Pięć nowych broni (strzelba, karabin wyborowy z lunetą, „Granit”, „Gabro”, „Weteran”), żyły rudy, oprawianie zwłok, zbieranie łusek, piec hutniczy i stół rusznikarski do składania amunicji.
 
 **Build 4 — Ekstrakcja.** Baza ze skrytką, odprawa, trzy wyjścia z kopalni, Przebudzenie lochu, głód i pragnienie, biwak z zapisem, zapis stanu bazy.

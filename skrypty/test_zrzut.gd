@@ -22,6 +22,16 @@ func _ready() -> void:
 			set_process(false)
 			_zrzuty_broni.call_deferred()
 			return
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--zrzut-dodatki="):
+			_katalog = a.trim_prefix("--zrzut-dodatki=")
+			set_process(false)
+			_zrzuty_dodatkow.call_deferred()
+			return
+	if "--test-pluton" in OS.get_cmdline_user_args():
+		set_process(false)
+		_test_pluton.call_deferred()
+		return
 	if "--test-rzemioslo" in OS.get_cmdline_user_args():
 		set_process(false)
 		_test_rzemioslo.call_deferred()
@@ -784,4 +794,122 @@ func _zrzuty_broni() -> void:
 		await _klatki(4)
 		await _zapisz("b_%s_strzal" % id)
 		await _klatki(40)
+	get_tree().quit()
+
+
+func _zrzuty_dodatkow() -> void:
+	var gra := get_parent()
+	var E := Ekwipunek
+	DirAccess.make_dir_recursive_absolute(_katalog)
+	await _klatki(20)
+	E.skrytka.wloz_gdziekolwiek(E.nowy("tlumik_kar"))
+	for p in E.skrytka.rzeczy.duplicate():
+		if p["id"] in ["kolimator", "tlumik_kar"]:
+			E.zamontuj("kwarc", p)
+		elif p["id"] == "tlumik_9":
+			E.zamontuj("jaspis", p)
+	gra.przezbroj("kwarc", "jaspis", "pluton")
+	await _klatki(12)
+	await _zapisz("d_pluton")
+	gra.hud.otworz_rzemioslo("stol", true)
+	await _klatki(6)
+	await _zapisz("d_stol")
+	gra.hud.zamknij_panele()
+	var sw: Swiat = gra.swiat
+	sw.gracz.sterowanie = false
+	sw.gracz.global_position = Vector3(0.95, 0.05, -4.0)
+	sw.gracz.rotation.y = 0.0
+	sw.gracz.set("_pitch", deg_to_rad(-7.0))
+	await _klatki(50)
+	await _zapisz("d_kwarc_biodro")
+	for b in sw.bronie:
+		b.test_cel = 1.0
+	await _klatki(50)
+	await _zapisz("d_kwarc_cel")
+	sw.bron().call("_strzal")
+	await _klatki(25)
+	await _zapisz("d_kwarc_po_strzale")
+	for b in sw.bronie:
+		b.test_cel = 0.0
+	sw.zmien_bron(1)
+	await _klatki(60)
+	await _zapisz("d_jaspis_biodro")
+	get_tree().quit()
+
+
+## Pluton: zadania, jedzenie, rany, śmierć, koniec kampanii, dodatki do broni.
+func _test_pluton() -> void:
+	var gra := get_parent()
+	var E := Ekwipunek
+	await get_tree().create_timer(0.3).timeout
+	print("pluton: ", E.pluton.size(), ", idzie: ", E.zolnierz()["imie"], " (", E.spec(), "), odrzut ×", E.mod("odrzut"), ", hałas ×", E.mod("halas"))
+	print("ranny nie zastąpi zdrowego: ", E.wyznacz(1), " -> ", E.zolnierz()["imie"], ", hałas ×", E.mod("halas"))
+	E.wyznacz(0)
+	# zadania
+	E.pluton[1]["zadanie"] = E.ZADANIA.find("Z_ZWIAD")
+	E.pluton[2]["zadanie"] = E.ZADANIA.find("Z_WYTOP")
+	E.pluton[3]["zadanie"] = E.ZADANIA.find("Z_APROWIZACJA")
+	E.pluton[5]["zadanie"] = E.ZADANIA.find("Z_AMUNICJA")
+	E.dodaj_zasob("ruda_miedzi", 4, true)
+	E.dodaj_zasob("ruda_olowiu", 2, true)
+	var jedzenie := func() -> int:
+		var n := 0
+		for p in E.skrytka.rzeczy:
+			if E.PRZEDMIOTY[p["id"]]["typ"] == "jedzenie":
+				n += 1
+		return n
+	var j0: int = jedzenie.call()
+	var n0 := _ile_naboi("A_556_FMJ")
+	gra.wyrusz()
+	await get_tree().create_timer(1.0).timeout
+	gra.swiat.gracz.zdrowie.cios(40.0)
+	gra.swiat.gracz.zdrowie.hp["tors"] = 30.0
+	gra.swiat.gracz.zdrowie.hp["noga_l"] = 20.0
+	print("rany po powrocie w tym stanie: ", gra.swiat.gracz.zdrowie.rany_po_powrocie())
+	gra.ewakuacja()
+	await get_tree().create_timer(1.0).timeout
+	print("raport:")
+	for r in E.raport:
+		print("   ", r)
+	print("jedzenie w skrytce ", j0, " -> ", jedzenie.call(), "; 5,56 FMJ ", n0, " -> ", _ile_naboi("A_556_FMJ"), "; mosiądz ", E.ile_zasobu("sztabka_mosiadzu", true), "; zwiad=", E.zwiad)
+	print("po powrocie idzie: ", E.zolnierz()["imie"], "; Wilk rany=", E.pluton[0]["rany"], " wyprawy=", E.pluton[0]["wyprawy"], "; panel plutonu otwarty: ", gra.hud.panel_otwarty())
+	gra.hud.zamknij_panele()
+	# dodatki
+	var kol := {}
+	var tl := {}
+	E.skrytka.wloz_gdziekolwiek(E.nowy("tlumik_kar"))
+	for p in E.skrytka.rzeczy:
+		if p["id"] == "kolimator":
+			kol = p
+		elif p["id"] == "tlumik_kar":
+			tl = p
+	print("kolimator na Kwarc: ", E.zamontuj("kwarc", kol), ", na Krzemień: ", E.zamontuj("krzemien", E.nowy("kolimator")), ", tłumik: ", E.zamontuj("kwarc", tl), " -> ", E.dodatki("kwarc"))
+	gra.przezbroj("kwarc", "jaspis", "stol")
+	await get_tree().create_timer(0.8).timeout
+	gra.hud.zamknij_panele()
+	var b: Bron = gra.swiat.bron()
+	print("broń: tłumik=", b.tlumik, " kolimator=", b.kolimator)
+	var st: Dictionary = str_to_var(var_to_str(E.call("_stan")))
+	print("zapis: dodatki ", st["bron"]["kwarc"]["dodatki"], ", pluton ", st["pluton"].size(), ", aktywny ", st["aktywny"])
+	E.zdejmij("kwarc", "tlumik_kar")
+	print("po zdjęciu: ", E.dodatki("kwarc"), ", w skrytce tłumik: ", E.ile_zasobu("tlumik_kar", true))
+	# kolejne wyprawy: lazaret, głód
+	for p in E.skrytka.rzeczy.duplicate():
+		if E.PRZEDMIOTY[p["id"]]["typ"] == "jedzenie":
+			E.skrytka.usun(p)
+	E.rozlicz_wyprawe(0)
+	print("bez jedzenia: ", E.raport.map(func(r): return r[1]))
+	# śmierć po kolei aż do końca kampanii
+	var kolejnosc := []
+	for i in 6:
+		kolejnosc.append(E.zolnierz()["imie"])
+		gra.wyrusz()
+		await get_tree().create_timer(0.6).timeout
+		gra.swiat.gracz.zdrowie.cios(999.0)
+		await get_tree().create_timer(5.8).timeout
+	print("ginęli: ", kolejnosc)
+	print("żywi: ", E.zywi(), ", koniec kampanii: ", E.koniec_kampanii(), ", panel: ", gra.hud.panel_otwarty(), ", polegli ", E.polegli)
+	E.nowa_kampania()
+	print("nowa kampania: żywi ", E.zywi(), ", skrytka ", E.skrytka.rzeczy.size(), ", idzie ", E.zolnierz()["imie"])
+	print("TEST PLUTONU ZAKOŃCZONY")
 	get_tree().quit()

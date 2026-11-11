@@ -113,13 +113,14 @@ func wyrusz() -> void:
 	for b in swiat.bronie:
 		b.zapisz_stan()
 	Ekwipunek.na_wyprawie = true
+	Ekwipunek.zwiad = false
 	Ekwipunek.wyprawy += 1
 	Ekwipunek.zapisz_baze()
 	zmien_swiat("kopalnia")
 
 
 ## Zmiana broni głównej albo bocznej w bazie: lokacja ładuje się od nowa z nową bronią.
-func przezbroj(glowna: String, boczna: String) -> void:
+func przezbroj(glowna: String, boczna: String, potem := "odprawa") -> void:
 	for b in swiat.bronie:
 		b.zapisz_stan()
 	Ekwipunek.bron_glowna = glowna
@@ -131,13 +132,21 @@ func przezbroj(glowna: String, boczna: String) -> void:
 	(func():
 		swiat.gracz.global_position = poz
 		swiat.gracz.rotation.y = obr
-		hud.otworz_odprawe()).call_deferred()
+		if potem == "stol":
+			hud.otworz_rzemioslo("stol", true)
+		elif potem == "pluton":
+			hud.otworz_pluton()
+		else:
+			hud.otworz_odprawe()).call_deferred()
 
 
 ## Udany powrót z lochu z tym, co żołnierz ma przy sobie.
 func ewakuacja() -> void:
+	Ekwipunek.rozlicz_wyprawe(swiat.gracz.zdrowie.rany_po_powrocie())
 	zmien_swiat("strzelnica")
-	hud.komunikat.call_deferred(tr("POWROT"), 5.0)
+	(func():
+		hud.komunikat(tr("POWROT"), 5.0)
+		hud.otworz_pluton()).call_deferred()
 
 
 ## Biwak: zapis zawieszający wyprawę i wyjście z gry.
@@ -164,6 +173,11 @@ func _smierc() -> void:
 	swiat.bronie.clear()
 	Ekwipunek.po_smierci()
 	zmien_swiat("strzelnica")
+	(func():
+		if Ekwipunek.koniec_kampanii():
+			hud.otworz_koniec()
+		else:
+			hud.otworz_pluton()).call_deferred()
 
 
 func _zastosuj_obraz() -> void:

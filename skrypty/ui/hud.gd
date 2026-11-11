@@ -359,7 +359,7 @@ func _fmt(x: float) -> String:
 
 
 func odswiez() -> void:
-	_wskazowka.text = tr("TYTUL") + " · build 5 · " + tr("PODPOWIEDZ_H")
+	_wskazowka.text = tr("TYTUL") + " · build 6a · " + tr("PODPOWIEDZ_H")
 	_et_nogi.text = tr("WYTRZ_NOGI")
 	_et_rece.text = tr("WYTRZ_RECE")
 	(_panel_pomoc.find_child("naglowek", true, false) as Label).text = tr("POMOC")
@@ -377,7 +377,7 @@ func komunikat(tekst: String, czas := 2.8) -> void:
 
 
 func panel_otwarty() -> bool:
-	return _panel_stroj.visible or _panel_pomoc.visible or ekwipunek.visible or (_panel_stol != null and _panel_stol.visible) or (_panel_odprawa != null and _panel_odprawa.visible) or (_panel_biwak != null and _panel_biwak.visible) or (_panel_rzem != null and _panel_rzem.visible)
+	return _panel_stroj.visible or _panel_pomoc.visible or ekwipunek.visible or (_panel_stol != null and _panel_stol.visible) or (_panel_odprawa != null and _panel_odprawa.visible) or (_panel_biwak != null and _panel_biwak.visible) or (_panel_rzem != null and _panel_rzem.visible) or (_panel_pluton != null and _panel_pluton.visible)
 
 
 func zamknij_panele() -> bool:
@@ -397,6 +397,8 @@ func zamknij_panele() -> bool:
 		_panel_biwak.visible = false
 	if _panel_rzem:
 		_panel_rzem.visible = false
+	if _panel_pluton:
+		_panel_pluton.visible = false
 	_wroc_do_gry()
 	return true
 
@@ -447,6 +449,15 @@ func otworz_odprawe() -> void:
 	_panel_odprawa.add_child(v)
 	v.add_child(_naglowek(tr("ODPRAWA")))
 	v.add_child(_opis(tr("ODPRAWA_CEL"), 22, Color("e6dcc0")))
+	var kto: Dictionary = Ekwipunek.zolnierz()
+	v.add_child(_opis("%s — %s" % [kto["imie"], tr("SPEC_" + String(kto["spec"]))], 19, Color("e6dcc0")))
+	if Ekwipunek.zwiad:
+		var licz := {"g": 0, "k": 0, "r": 0}
+		for wiersz in Kopalnia.MAPA:
+			for znak in wiersz:
+				if licz.has(znak):
+					licz[znak] += 1
+		v.add_child(_opis("%s: %s ×%d, %s ×%d, %s ×%d" % [tr("ZWIAD_WYNIK"), tr("ZW_ghul"), licz["g"], tr("ZW_knecht"), licz["k"], tr("ZW_rycerz"), licz["r"]], 18, Color("9fb0b8")))
 	v.add_child(_opis(tr("ODPRAWA_OPIS")))
 	v.add_child(_opis("%s: %.1f kg" % [tr("E_OBCIAZENIE"), Ekwipunek.masa()]))
 	# wybór broni z plutonowej zbrojowni
@@ -532,9 +543,14 @@ func otworz_rzemioslo(stacja: String, ze_skrytka: bool) -> void:
 	var przewijanie := ScrollContainer.new()
 	przewijanie.custom_minimum_size = Vector2(960, 560)
 	v.add_child(przewijanie)
+	przewijanie.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var margines := MarginContainer.new()
+	margines.add_theme_constant_override("margin_right", 26)
+	margines.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	przewijanie.add_child(margines)
 	var lista := VBoxContainer.new()
 	lista.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	przewijanie.add_child(lista)
+	margines.add_child(lista)
 	for r in Rzemioslo.receptury(stacja):
 		var wiersz := HBoxContainer.new()
 		var ok := Rzemioslo.mozna(r, ze_skrytka)
@@ -570,8 +586,120 @@ func otworz_rzemioslo(stacja: String, ze_skrytka: bool) -> void:
 				b.add_theme_font_size_override("font_size", 17)
 				wiersz.add_child(b)
 				lista.add_child(wiersz)
+	if ze_skrytka and stacja != "piec":
+		lista.add_child(_opis(tr("DODATKI"), 20, Color("e6dcc0")))
+		for idb in [Ekwipunek.bron_glowna, Ekwipunek.bron_boczna]:
+			for dd in Ekwipunek.dodatki(idb):
+				var w1 := HBoxContainer.new()
+				var l1 := _opis("%s: %s" % [tr(Bron.DANE[idb]["nazwa"]), tr(Ekwipunek.PRZEDMIOTY[dd]["nazwa"])], 17)
+				l1.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				w1.add_child(l1)
+				var b1 := _przycisk(tr("ZDEJMIJ"), func():
+					Ekwipunek.zdejmij(idb, dd)
+					gra.przezbroj(Ekwipunek.bron_glowna, Ekwipunek.bron_boczna, "stol"))
+				b1.add_theme_font_size_override("font_size", 17)
+				w1.add_child(b1)
+				lista.add_child(w1)
+			for poj in Ekwipunek.pojemniki() + [Ekwipunek.skrytka]:
+				for p in poj.rzeczy:
+					var defd: Dictionary = Ekwipunek.PRZEDMIOTY[p["id"]]
+					if defd["typ"] != "dodatek" or not (idb in defd["pasuje"]) or Ekwipunek.ma_dodatek(idb, defd["slot"]) != "":
+						continue
+					var w2 := HBoxContainer.new()
+					var l2 := _opis("%s ← %s" % [tr(Bron.DANE[idb]["nazwa"]), tr(defd["nazwa"])], 17, Color("a89f86"))
+					l2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+					w2.add_child(l2)
+					var b2 := _przycisk(tr("ZAMONTUJ"), func():
+						Ekwipunek.zamontuj(idb, p)
+						gra.przezbroj(Ekwipunek.bron_glowna, Ekwipunek.bron_boczna, "stol"))
+					b2.add_theme_font_size_override("font_size", 17)
+					w2.add_child(b2)
+					lista.add_child(w2)
 	v.add_child(_przycisk(tr("ZAMKNIJ"), zamknij_panele))
 	_otworz(_panel_rzem)
+
+
+var _panel_pluton: PanelContainer
+
+
+## Tablica plutonu: kto idzie, kto leży w lazarecie, zadania dla pozostałych, raport z bazy.
+func otworz_pluton() -> void:
+	if not (gra.swiat is Strzelnica):
+		return
+	if _panel_pluton:
+		_panel_pluton.queue_free()
+	_panel_pluton = _panel(1040)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	_panel_pluton.add_child(v)
+	v.add_child(_naglowek(tr("PLUTON")))
+	v.add_child(_opis(tr("PLUTON_OPIS"), 16, Color("8f8872")))
+	for i in Ekwipunek.pluton.size():
+		var z: Dictionary = Ekwipunek.pluton[i]
+		var w := HBoxContainer.new()
+		w.add_theme_constant_override("separation", 12)
+		var kolor := Color("cfc6ad")
+		var status := "%s: %d" % [tr("WYPRAW"), int(z["wyprawy"])]
+		if not z["zyje"]:
+			kolor = Color("6f3a34")
+			status = tr("POLEGLY")
+		elif i == Ekwipunek.aktywny:
+			kolor = Color("e6dcc0")
+			status = tr("IDZIE")
+		elif int(z["rany"]) > 0:
+			kolor = Color("d9a05a")
+			status = "%s: %d" % [tr("W_LAZARECIE"), int(z["rany"])]
+		var l := _opis("%s — %s" % [z["imie"], tr("SPEC_" + String(z["spec"]))], 18, kolor)
+		l.custom_minimum_size = Vector2(520, 0)
+		l.autowrap_mode = TextServer.AUTOWRAP_OFF
+		w.add_child(l)
+		var ls := _opis(status, 16, kolor)
+		ls.custom_minimum_size = Vector2(190, 0)
+		ls.autowrap_mode = TextServer.AUTOWRAP_OFF
+		w.add_child(ls)
+		if z["zyje"] and i != Ekwipunek.aktywny:
+			if int(z["rany"]) == 0:
+				var wyb := OptionButton.new()
+				for zad in Ekwipunek.ZADANIA:
+					wyb.add_item(tr(zad))
+				wyb.selected = int(z["zadanie"])
+				wyb.add_theme_font_size_override("font_size", 16)
+				wyb.item_selected.connect(func(nr: int): z["zadanie"] = nr)
+				w.add_child(wyb)
+			var b := _przycisk(tr("WYZNACZ"), func():
+				if Ekwipunek.wyznacz(i):
+					otworz_pluton())
+			b.add_theme_font_size_override("font_size", 16)
+			w.add_child(b)
+		v.add_child(w)
+	if not Ekwipunek.raport.is_empty():
+		v.add_child(_opis(tr("RAPORT"), 20, Color("e6dcc0")))
+		for r in Ekwipunek.raport:
+			var tekst := "%s: %s" % [r[0], tr(r[1]).to_lower()]
+			if String(r[2]) != "":
+				tekst += " (%s)" % r[2]
+			v.add_child(_opis(tekst, 16, Color("a89f86")))
+	v.add_child(_przycisk(tr("ZAMKNIJ"), zamknij_panele))
+	_otworz(_panel_pluton)
+
+
+func otworz_koniec() -> void:
+	if _panel_pluton:
+		_panel_pluton.queue_free()
+	_panel_pluton = _panel(700)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 14)
+	_panel_pluton.add_child(v)
+	v.add_child(_naglowek(tr("KONIEC")))
+	v.add_child(_opis(tr("KONIEC_OPIS")))
+	for z in Ekwipunek.pluton:
+		v.add_child(_opis("✝ %s — %s: %d" % [z["imie"], tr("WYPRAW"), int(z["wyprawy"])], 17, Color("8f8872")))
+	v.add_child(_przycisk(tr("NOWA_KAMPANIA"), func():
+		Ekwipunek.nowa_kampania()
+		gra.swiat.bronie.clear()
+		zamknij_panele()
+		gra.zmien_swiat("strzelnica")))
+	_otworz(_panel_pluton)
 
 
 func przelacz_ekwipunek() -> void:

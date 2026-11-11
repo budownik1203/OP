@@ -1,5 +1,32 @@
 # Lista zmian
 
+## Build 6a — Pluton i dodatki do broni (2026-11-11)
+
+Pierwsza z trzech części wersji 0.1.
+
+**Pluton**
+- Sześciu żołnierzy z nazwiskami i specjalnościami: strzelec (mniejszy odrzut), zwiadowca (cichszy ruch), saper (szybsze kucie), sanitariusz (szybsze leczenie), strzelec wyborowy (stabilniejszy cel), rusznikarz (wydajniejszy w bazie).
+- Tablica plutonu pod wiatą (F): kto idzie na wyprawę, kto leży w lazarecie, zadania dla pozostałych, raport z bazy.
+- Na wyprawę idzie jeden. Jego specjalność działa w lochu.
+- Trwała śmierć: poległy nie wraca, jego sprzęt przepada (poza relikwiarzem), baza wydaje następnemu minimalny przydział.
+- Rany: kto wraca poturbowany, trafia do lazaretu na jedną lub dwie wyprawy. Ranny może iść tylko wtedy, gdy nie ma zdrowych.
+- Gdy zginie ostatni, kampania się kończy; ekran z listą poległych i przycisk nowej kampanii.
+
+**Zadania w bazie na czas wyprawy**
+- Każdy zdrowy żołnierz w bazie zjada jedną porcję ze skrytki. Bez jedzenia nic nie robi.
+- Produkcja amunicji: składa naboje do aktualnej broni głównej z surowców w skrytce (2 partie, rusznikarz 3).
+- Wytop rudy, aprowizacja (cztery porcje jedzenia i węgiel), zwiad (odprawa pokazuje liczbę wrogów każdego rodzaju), odpoczynek.
+
+**Dodatki do broni (stół rusznikarski w bazie)**
+- Kolimator na „Kwarc”, „Granit” i „Gabro”: celowanie czerwoną kropką zamiast przyrządów, szybsze składanie się.
+- Tłumik 9 mm („Jaspis”, „Gabro”) i tłumik karabinowy („Kwarc”, „Granit”): wystrzał słychać z ok. jednej trzeciej odległości, brak błysku, dłuższa broń.
+- Dodatki są widoczne na broni i zapisują się razem z nią.
+
+**Znane braki**
+- Żołnierze w bazie nie są widoczni jako postacie.
+- Chwyt przedni i latarka jako osobne dodatki nie weszły; latarka jest nadal wbudowana w każdą broń.
+- Zwiad pokazuje na razie stały skład wrogów, bo loch nie jest jeszcze losowany (6c).
+
 ## Build 5 — Ruda i naboje (2026-11-11)
 
 **Nowa broń (wybór w odprawie przy bramie)**
