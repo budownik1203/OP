@@ -22,6 +22,8 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
 
 - `skrypty/` — GDScript. Sceny buduje się w kodzie; pliki `.tscn` zawierają tylko korzeń ze skryptem.
 - `skrypty/swiat.gd` — baza każdej lokacji (gracz, ślady, krew, hałas); `strzelnica/`, `kopalnia.gd` to lokacje; `wrogowie/` — wrogowie i strefy trafień; `gracz/zdrowie.gd` — rany i leki.
+- `skrypty/rzemioslo.gd` — receptury pieca i stołu rusznikarskiego; surowce to przedmioty ze stosem (`dane.ile`).
+- `narzedzia/blender/bron_rodzina.py` — pozostała broń; dłonie z `rece.py` (`prawa_karabin`, `lewa_loze`, `prawa_pistolet`, `lewa_pistolet`).
 - `narzedzia/blender/postacie.py` — wspólny szkielet człowieka i warianty wrogów.
 - `skrypty/auto/` — autoloady: `Jezyk`, `Wejscie`, `Strojenie`, `Amunicja`, `Dzwiek`, `Ekwipunek` (stan żołnierza między lokacjami).
 - `skrypty/ekwipunek/` — siatka (`Pojemnik`), przedmioty leżące, skrzynie; `skrypty/ui/ekwipunek_ui.gd` — ekran ekwipunku.
@@ -47,5 +49,7 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
 3. `xvfb-run godot --rendering-driver opengl3 -- --test-gra` — przejście wszystkich czynności gracza bez błędów.
    `xvfb-run godot --rendering-driver opengl3 -- --test-ekwipunek` — siatka, waga, przeciąganie myszą, łup, śmierć.
    `godot --headless -- --test-ekstrakcja` — skrytka, zamiana noszonych rzeczy, głód, Przebudzenie, wyjścia, zapis i wznowienie.
+   `godot --headless -- --test-rzemioslo` — każda broń, strzelba, receptury, żyły, oprawianie, łuski.
+   `xvfb-run godot --rendering-driver opengl3 -- --zrzut-bron=KATALOG` — każda broń z biodra, w celowaniu i przy strzale.
    `godot --headless -- --swiat=kopalnia --test-loch` — wrogowie, strefy, rozczłonkowanie, ciosy, leki, śmierć.
 4. `narzedzia/zrzuty.sh` i obejrzenie zrzutów; nowe modele dodatkowo przez `narzedzia/podglad.sh`.

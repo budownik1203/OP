@@ -34,6 +34,10 @@ var uzywa := ""                  ## lek w trakcie użycia
 var uzycie_t := 0.0
 var uzycie_max := 1.0
 var _spozywany := {}
+var czynnosc_nazwa := ""        ## klucz tekstu trwającej czynności (kucie, oprawianie…)
+var _cz_po := Callable()
+var _cz_tik := Callable()
+var _cz_t := 0.0
 
 const CZAS_PRAGNIENIA := 1800.0   ## sekundy od pełnego nawodnienia do zera
 const CZAS_GLODU := 3300.0
@@ -115,9 +119,26 @@ func _process(dt: float) -> void:
 			zmiana.emit()
 	znieczulenie = maxf(znieczulenie - dt, 0.0)
 	bol = maxf(bol - dt * (0.02 if znieczulenie <= 0.0 else 0.25), 0.0)
+	if uzywa == "czynnosc":
+		var g := get_parent() as Gracz
+		if g != null and g.predkosc_pozioma > 1.0:
+			przerwij_uzycie()
+			return
+		_cz_t += dt
+		if _cz_t >= 1.0:
+			_cz_t = 0.0
+			if _cz_tik.is_valid():
+				_cz_tik.call()
 	if uzywa != "":
 		uzycie_t += dt
 		if uzycie_t >= uzycie_max:
+			if uzywa == "czynnosc":
+				uzywa = ""
+				czynnosc_nazwa = ""
+				if _cz_po.is_valid():
+					_cz_po.call()
+				zmiana.emit()
+				return
 			if uzywa == "spozycie":
 				if Ekwipunek.spozyj(_spozywany):
 					komunikat.emit(tr(Ekwipunek.PRZEDMIOTY[_spozywany["id"]]["nazwa"]) + ": " + tr("LEK_UZYTO"))
@@ -141,6 +162,21 @@ func zacznij_uzycie(lek: String) -> void:
 	uzycie_t = 0.0
 	uzycie_max = LEKI[lek][1]
 	Dzwiek.przy_uchu("lek", -6.0)
+	zmiana.emit()
+
+
+## Dłuższa czynność z paskiem postępu: kucie rudy, oprawianie, zbieranie łusek.
+## Ruch ją przerywa. co_sekunde: np. hałas kilofa.
+func zacznij_czynnosc(klucz: String, czas: float, po: Callable, co_sekunde := Callable()) -> void:
+	if not zyje or uzywa != "":
+		return
+	uzywa = "czynnosc"
+	czynnosc_nazwa = klucz
+	uzycie_t = 0.0
+	uzycie_max = czas
+	_cz_po = po
+	_cz_tik = co_sekunde
+	_cz_t = 0.0
 	zmiana.emit()
 
 
@@ -168,6 +204,7 @@ func niedobor() -> float:
 
 func przerwij_uzycie() -> void:
 	uzywa = ""
+	czynnosc_nazwa = ""
 	zmiana.emit()
 
 

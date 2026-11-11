@@ -6,6 +6,7 @@ extends Swiat
 const DYSTANSE := [10.0, 25.0, 50.0, 100.0]
 var stol_pozycja := Vector3(3.2, 0.0, 2.2)
 var skrytka_pozycja := Vector3(-3.2, 0.0, 2.6)
+var piec_pozycja := Vector3(7.2, 0.0, 1.6)
 
 
 func _ready() -> void:
@@ -131,6 +132,24 @@ func _stanowisko() -> void:
 	_styl_napisu(napis_s, 0.004, Color("d8c9a0"))
 	napis_s.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
 	add_child(napis_s)
+	# piec hutniczy z cegły, z paleniskiem i kominem
+	Mat.blok(self, Vector3(1.3, 1.3, 1.1), piec_pozycja + Vector3(0, 0.65, 0), Mat.kamien_ciemny())
+	Mat.blok(self, Vector3(0.6, 1.5, 0.6), piec_pozycja + Vector3(0, 2.05, 0.1), Mat.kamien_ciemny(), false)
+	Mat.blok(self, Vector3(0.5, 0.4, 0.06), piec_pozycja + Vector3(0, 0.55, -0.56), Mat.swiecacy(Color(1.0, 0.4, 0.08), 2.2), false)
+	var zar := OmniLight3D.new()
+	zar.position = piec_pozycja + Vector3(0, 0.6, -1.0)
+	zar.light_color = Color(1.0, 0.5, 0.2)
+	zar.light_energy = 0.9
+	zar.omni_range = 4.0
+	add_child(zar)
+	var napis_p := Label3D.new()
+	napis_p.text = tr("PIEC")
+	napis_p.set_meta("klucz", "PIEC")
+	napis_p.add_to_group("napisy")
+	napis_p.position = piec_pozycja + Vector3(0.0, 3.1, 0.0)
+	_styl_napisu(napis_p, 0.004, Color("d8c9a0"))
+	napis_p.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	add_child(napis_p)
 	# kosze z ogniem
 	for x in [-5.4, 5.4]:
 		Mat.blok(self, Vector3(0.5, 0.7, 0.5), Vector3(x, 0.35, -2.6), Mat.kolor(Color("1d1b1a"), 0.7, 0.6))
@@ -275,6 +294,8 @@ func podpowiedz() -> String:
 		return tr("E_SKRYTKA_PODP")
 	if przy_stole():
 		return tr("STOL_PODPOWIEDZ")
+	if gracz.global_position.distance_to(piec_pozycja) < 2.4:
+		return tr("PIEC_PODP")
 	if przy_bramie():
 		return tr("BRAMA_PODPOWIEDZ")
 	return ""
@@ -285,7 +306,10 @@ func uzyj(gra: Node) -> bool:
 		gra.hud.otworz_ekwipunek(Ekwipunek.skrytka)
 		return true
 	if przy_stole():
-		gra.hud.otworz_stol()
+		gra.hud.otworz_rzemioslo("stol", true)
+		return true
+	if gracz.global_position.distance_to(piec_pozycja) < 2.4:
+		gra.hud.otworz_rzemioslo("piec", true)
 		return true
 	if przy_bramie():
 		gra.hud.otworz_odprawe()

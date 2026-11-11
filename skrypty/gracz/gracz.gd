@@ -31,6 +31,7 @@ var predkosc_pozioma := 0.0
 var ruch_myszy := Vector2.ZERO   ## zbierany dla broni, zerowany przez broń
 var sterowanie := true
 var zdrowie: Zdrowie
+var przyblizenie := 1.0          ## fov / fov bazowe; zmniejsza czułość przy lunecie
 var latarka := false           ## ustawiane przez broń; wrogowie widzą światło z daleka
 
 var szyja: Node3D
@@ -91,7 +92,7 @@ func wejscie(ev: InputEvent) -> void:
 	if not sterowanie or not zdrowie.zyje:
 		return
 	if ev is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		var czulosc: float = 0.0022 * Strojenie.w["S_MYSZ"] * (0.6 if celuje else 1.0)
+		var czulosc: float = 0.0022 * Strojenie.w["S_MYSZ"] * (0.6 if celuje else 1.0) * minf(przyblizenie / 0.85, 1.0)
 		rotate_y(-ev.relative.x * czulosc)
 		_pitch = clampf(_pitch - ev.relative.y * czulosc, -1.48, 1.48)
 		ruch_myszy += ev.relative

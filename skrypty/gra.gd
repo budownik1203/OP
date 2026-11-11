@@ -118,6 +118,22 @@ func wyrusz() -> void:
 	zmien_swiat("kopalnia")
 
 
+## Zmiana broni głównej albo bocznej w bazie: lokacja ładuje się od nowa z nową bronią.
+func przezbroj(glowna: String, boczna: String) -> void:
+	for b in swiat.bronie:
+		b.zapisz_stan()
+	Ekwipunek.bron_glowna = glowna
+	Ekwipunek.bron_boczna = boczna
+	var poz := swiat.gracz.global_position
+	var obr := swiat.gracz.rotation.y
+	swiat.bronie.clear()
+	_zaladuj_swiat.call_deferred(nazwa_swiata)
+	(func():
+		swiat.gracz.global_position = poz
+		swiat.gracz.rotation.y = obr
+		hud.otworz_odprawe()).call_deferred()
+
+
 ## Udany powrót z lochu z tym, co żołnierz ma przy sobie.
 func ewakuacja() -> void:
 	zmien_swiat("strzelnica")
@@ -201,8 +217,10 @@ func _unhandled_input(ev: InputEvent) -> void:
 				hud.komunikat(tr("E_BRAK_MIEJSCA"))
 		elif poj != null:
 			hud.otworz_ekwipunek(poj.get("pojemnik"))
-		else:
-			swiat.uzyj(self)
+		elif not swiat.uzyj(self):
+			swiat.uzyj_wspolne(self)
+	elif ev.is_action_pressed("opraw"):
+		swiat.opraw(self)
 	else:
 		for i in Zdrowie.KOLEJNOSC.size():
 			if ev.is_action_pressed("lek_%d" % (i + 1)):

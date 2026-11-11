@@ -5,7 +5,8 @@ extends StaticBody3D
 const LUP := [
 	["paczka_556", 3], ["paczka_9", 3], ["bandaz", 3], ["opatrunek", 2], ["przeciwbolowe", 2],
 	["konserwa", 3], ["suchary", 3], ["monety", 4], ["relikwia", 1], ["klucz", 1],
-	["mag_kwarc", 1], ["mag_jaspis", 1], ["apteczka", 1], ["szyna", 1], ["chlebak", 1],
+	["mag_kwarc", 1], ["mag_jaspis", 1], ["paczka_45", 1], ["paczka_12", 2], ["paczka_762x39", 2], ["paczka_762x51", 1],
+	["wegiel", 4], ["splonki", 3], ["proch", 2], ["siarka", 1], ["saletra", 1], ["apteczka", 1], ["szyna", 1], ["chlebak", 1],
 ]
 
 var pojemnik: Pojemnik
@@ -45,10 +46,13 @@ static func wypelnij(poj: Pojemnik, los: RandomNumberGenerator, ile: int, tabela
 		var p: Dictionary
 		match Ekwipunek.PRZEDMIOTY[id]["typ"]:
 			"mag":
-				p = Ekwipunek.nowy_magazynek(id, "A_556_FMJ" if id == "mag_kwarc" else "A_9_FMJ", "", los.randi_range(3, 20))
+				p = Ekwipunek.nowy_magazynek(id, Amunicja.dla_kalibru(Ekwipunek.PRZEDMIOTY[id]["kaliber"])[0], "", los.randi_range(3, 20))
 			"amunicja":
 				var typy := Amunicja.dla_kalibru(Ekwipunek.PRZEDMIOTY[id]["kaliber"])
 				p = Ekwipunek.nowa_paczka(id, typy[los.randi_range(0, typy.size() - 1)], los.randi_range(8, 30))
+			"surowiec":
+				var stos: int = Ekwipunek.PRZEDMIOTY[id].get("stos", 1)
+				p = Ekwipunek.nowy(id, {"ile": los.randi_range(1, maxi(1, stos / 5))})
 			_:
 				p = Ekwipunek.nowy(id)
 		p["odkryty"] = false

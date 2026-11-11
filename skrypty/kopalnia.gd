@@ -26,6 +26,13 @@ const MAPA := [
 const P_SZYB := Vector2i(20, 9)       ## wyjście za kratą: wymaga żelaznego klucza
 const P_CHODNIK := Vector2i(1, 9)     ## stary chodnik: zawala się przy Przebudzeniu 50
 const P_BIWAK := Vector2i(7, 7)
+const P_PIEC := Vector2i(18, 3)
+const P_STOL := Vector2i(8, 9)
+const ZYLY := [
+	[Vector2i(6, 1), "ruda_miedzi"], [Vector2i(12, 1), "ruda_olowiu"], [Vector2i(10, 5), "ruda_zelaza"],
+	[Vector2i(3, 9), "siarka"], [Vector2i(15, 9), "saletra"], [Vector2i(14, 11), "ruda_miedzi"],
+	[Vector2i(5, 11), "ruda_olowiu"], [Vector2i(18, 5), "ruda_zelaza"],
+]
 ## próg Przebudzenia: [komunikat, wrogowie do wypuszczenia]
 const PROGI := [
 	[25.0, "BUDZI_1", ["ghul", "ghul"]],
@@ -45,6 +52,7 @@ var _lista_skrzyn: Array[Skrzynia] = []
 var _wrogowie_startowi: Array = []
 var _t_fala := 0.0
 var _zawal: Node3D
+var _zyly: Array = []             ## {poz, id, ile, wezel}
 var _los := RandomNumberGenerator.new()
 
 
@@ -105,6 +113,63 @@ func _wyjscia_i_biwak() -> void:
 	Mat.blok(self, Vector3(0.5, 0.07, 0.07), pb + Vector3(0, 0.06, 0), dr, false, Vector3(0, 0.6, 0))
 	Mat.blok(self, Vector3(0.5, 0.07, 0.07), pb + Vector3(0, 0.10, 0), dr, false, Vector3(0, -0.7, 0))
 	Mat.blok(self, Vector3(0.7, 0.06, 1.8), pb + Vector3(0.95, 0.03, 0.2), Mat.plotno(), false)
+	_zbuduj_zyly()
+	# stary piec górniczy i stół rusznikarski zostawiony przez poprzedni patrol
+	var pp := _srodek(P_PIEC.x, P_PIEC.y) + _sciana_przy(P_PIEC) * 0.9
+	Mat.blok(self, Vector3(1.0, 1.1, 1.0), pp + Vector3(0, 0.55, 0), Mat.kamien_ciemny())
+	Mat.blok(self, Vector3(0.4, 0.3, 0.4), pp + Vector3(0, 0.5, 0) - _sciana_przy(P_PIEC) * 0.35, Mat.swiecacy(Color(0.9, 0.3, 0.05), 1.2), false)
+	var pst := _srodek(P_STOL.x, P_STOL.y) + _sciana_przy(P_STOL) * 0.95
+	Mat.blok(self, Vector3(1.3, 0.06, 0.7), pst + Vector3(0, 0.86, 0), dr, true, Vector3(0, atan2(_sciana_przy(P_STOL).x, _sciana_przy(P_STOL).z), 0))
+	Mat.blok(self, Vector3(0.9, 0.84, 0.5), pst + Vector3(0, 0.42, 0), dr, false, Vector3(0, atan2(_sciana_przy(P_STOL).x, _sciana_przy(P_STOL).z), 0))
+	Mat.blok(self, Vector3(0.3, 0.14, 0.2), pst + Vector3(0.2, 0.96, 0), Mat.kolor(Color("3b4a2c"), 0.8), false)
+
+
+func _sciana_przy(c: Vector2i) -> Vector3:
+	for k in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		if _znak(c.x + k.x, c.y + k.y) == "#":
+			return Vector3(k.x, 0, k.y)
+	return Vector3.ZERO
+
+
+func _zbuduj_zyly() -> void:
+	for z in ZYLY:
+		var c: Vector2i = z[0]
+		var bok := _sciana_przy(c)
+		var poz := _srodek(c.x, c.y) + bok * 1.38 + Vector3(0, 1.25, 0)
+		var wezel := Node3D.new()
+		add_child(wezel)
+		var mat := Mat.kolor(Color(Ekwipunek.PRZEDMIOTY[z[1]]["kolor"]).lightened(0.12), 0.45, 0.35)
+		for i in 7:
+			var r := Vector3(_los.randf_range(0.14, 0.34), _los.randf_range(0.12, 0.3), _los.randf_range(0.14, 0.34))
+			var wzdluz := Vector3(bok.z, 0, bok.x)
+			Mat.blok(wezel, r, poz + wzdluz * _los.randf_range(-0.6, 0.6) + Vector3(0, _los.randf_range(-0.55, 0.55), 0), mat, false, Vector3(_los.randf(), _los.randf() * 3.0, _los.randf()))
+		_zyly.append({"poz": poz, "id": z[1], "ile": 3, "wezel": wezel})
+
+
+func _zyla_w_zasiegu() -> Dictionary:
+	for z in _zyly:
+		var d: Vector3 = (z["poz"] as Vector3) - gracz.global_position
+		if int(z["ile"]) > 0 and Vector2(d.x, d.z).length() < 2.0:
+			return z
+	return {}
+
+
+func _kuj(gra: Node, z: Dictionary) -> void:
+	if Ekwipunek.ile_zasobu("kilof") <= 0:
+		gra.hud.komunikat(tr("ZYLA_BRAK_KILOFA"))
+		return
+	gracz.zdrowie.zacznij_czynnosc("KUCIE", 7.0, func():
+		z["ile"] = int(z["ile"]) - 1
+		var id: String = z["id"]
+		if Ekwipunek.dodaj_zasob(id, 1) > 0:
+			upusc(Ekwipunek.nowy(id, {"ile": 1}), gracz.global_position + Vector3.UP * 0.8)
+		gra.hud.komunikat(tr("WYDOBYTO") + ": " + tr(Ekwipunek.PRZEDMIOTY[id]["nazwa"]))
+		if int(z["ile"]) <= 0:
+			(z["wezel"] as Node3D).visible = false
+			gra.hud.komunikat(tr("ZYLA_PUSTA")),
+		func():
+			Dzwiek.w_swiecie("kilof", z["poz"], 0.0, 0.1, 20.0)
+			halas(gracz.global_position, 20.0))
 
 
 ## Stan lochu do zapisu przy biwaku.
@@ -118,7 +183,7 @@ func stan_do_zapisu() -> Dictionary:
 	var z := gracz.zdrowie
 	return {
 		"wersja": 1, "przebudzenie": przebudzenie, "prog": prog, "chodnik": chodnik_zawalony,
-		"zywi": zywi, "skrzynie": skrz,
+		"zywi": zywi, "skrzynie": skrz, "zyly": _zyly.map(func(z): return int(z["ile"])),
 		"zdrowie": {"hp": z.hp.duplicate(), "lekkie": z.krwawienie_lekkie, "ciezkie": z.krwawienie_ciezkie, "zlamania": z.zlamania.duplicate(), "bol": z.bol},
 	}
 
@@ -137,6 +202,10 @@ func _wznow(d: Dictionary) -> void:
 	var skrz: Array = d["skrzynie"]
 	for i in mini(skrz.size(), _lista_skrzyn.size()):
 		_lista_skrzyn[i].pojemnik = Pojemnik.z_danych(skrz[i])
+	var zy: Array = d.get("zyly", [])
+	for i in mini(zy.size(), _zyly.size()):
+		_zyly[i]["ile"] = int(zy[i])
+		(_zyly[i]["wezel"] as Node3D).visible = int(zy[i]) > 0
 	var z := gracz.zdrowie
 	for k in d["zdrowie"]["hp"]:
 		z.hp[k] = float(d["zdrowie"]["hp"][k])
@@ -383,6 +452,12 @@ func podpowiedz() -> String:
 		return tr("WYJSCIE_ZAWALONE") if chodnik_zawalony else tr("WYJSCIE_CHODNIK")
 	if _przy(P_BIWAK, 1.6):
 		return tr("BIWAK_PODP")
+	if not _zyla_w_zasiegu().is_empty():
+		return tr("ZYLA_PODP")
+	if _przy(P_PIEC):
+		return tr("PIEC_PODP")
+	if _przy(P_STOL):
+		return tr("RUSZNIKARZ_PODP")
 	return ""
 
 
@@ -401,6 +476,16 @@ func uzyj(gra: Node) -> bool:
 		return true
 	if _przy(P_BIWAK, 1.6):
 		gra.hud.otworz_biwak()
+		return true
+	var zyla := _zyla_w_zasiegu()
+	if not zyla.is_empty():
+		_kuj(gra, zyla)
+		return true
+	if _przy(P_PIEC):
+		gra.hud.otworz_rzemioslo("piec", false)
+		return true
+	if _przy(P_STOL):
+		gra.hud.otworz_rzemioslo("stol", false)
 		return true
 	return false
 

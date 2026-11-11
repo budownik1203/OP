@@ -1,5 +1,42 @@
 # Lista zmian
 
+## Build 5 — Ruda i naboje (2026-11-11)
+
+**Nowa broń (wybór w odprawie przy bramie)**
+- Karabinek „Granit” 7,62×39: mocniejszy i z większym odrzutem niż „Kwarc”.
+- Pistolet maszynowy „Gabro” 9×19: mały odrzut, tania amunicja.
+- Strzelba „Łupek” 12/70: ładowana po jednym naboju z paczki w kamizelce lub kieszeni, przeładowywana czółenkiem po każdym strzale. Klawisz B wybiera rodzaj dokładanego naboju; strzał przerywa ładowanie.
+- Karabin wyborowy „Krzemień” 7,62×51: zamek ślizgowy repetowany po każdym strzale, luneta z przybliżeniem i krzyżem.
+- Pistolet „Weteran” .45 ACP jako druga broń boczna.
+- Dziewięć nowych typów amunicji: .45 (2), 12/70 śrut i breneka, 7,62×39 (3), 7,62×51 (2). Śrut to osiem osobnych pocisków.
+- Każda broń ma własny model z Blendera, magazynki jako przedmioty i własny dźwięk.
+
+**Wydobycie**
+- Osiem żył w kopalni: miedź, ołów, żelazo, siarka, saletra. Każda daje trzy bryły.
+- Kucie wymaga kilofa (jest w skrytce), trwa 7 s na bryłę, hałasuje i budzi loch o ok. 3 punkty.
+- Ruda jest ciężka: 1,5–1,8 kg za bryłę.
+
+**Oprawianie i łuski**
+- Klawisz V przy zwłokach potwora: 4 s pracy nożem, do łupu trafiają kość, ścięgna, czasem gruczoł.
+- Po strzelaninie można zebrać własne łuski (F w miejscu walki, 3 s); odzysk 60%.
+
+**Rzemiosło**
+- Piec hutniczy (w bazie i jeden w kopalni): dwie bryły rudy na sztabkę; stal wymaga też węgla.
+- Stół rusznikarski (w bazie zamiast stołu amunicyjnego i jeden w kopalni): proch z siarki, saletry i węgla; łuski z mosiądzu; naboje z łusek, prochu, spłonek i ołowiu; typy przeciwpancerne wymagają stali.
+- Demontaż naboi: wracają łuski, proch i spłonki.
+- Spłonek nie da się wytworzyć: pochodzą z zapasu startowego, skrzyń i demontażu.
+- W bazie receptury korzystają ze skrytki i tam odkładają wyniki.
+
+**Zmiany**
+- Darmowe napełnianie magazynków przy stole zniknęło. Amunicję trzeba mieć albo zrobić.
+- Stare zapisy bazy z builda 4 nie są wczytywane (zmienił się format); gra zaczyna nową kampanię.
+
+**Znane braki**
+- Dłonie na nowych broniach to te same sztywne modele, dopasowane przesunięciem; na „Gabro” lewa dłoń trzyma chwyt przedni niedokładnie.
+- Brak animacji wkładania pojedynczego naboju do strzelby i ruchu ręki przy zamku karabinu wyborowego.
+- Luneta ma stałe przybliżenie i nie ma regulacji na odległość.
+- Liczby gospodarki (30 łusek ze sztabki, 40 porcji prochu z zestawu) są ustawione na wyczucie.
+
 ## Build 4 — Ekstrakcja (2026-11-11)
 
 Pierwsza zamknięta pętla: baza → odprawa → kopalnia → wyjście z łupem → skrytka → kolejna wyprawa.

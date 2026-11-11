@@ -143,3 +143,15 @@ zapisz("lek", x, 0.3)
 czas = t(2.4)
 x = (np.sin(2 * np.pi * 38 * czas) + 0.6 * np.sin(2 * np.pi * 51 * czas + 1.0)) * (0.6 + 0.4 * np.sin(2 * np.pi * 0.9 * czas)) + filtr(szum(2.4), gora=120) * 1.5
 zapisz("dudnienie", x * np.hanning(len(czas)), 0.8)
+
+# ---------------- build 5: nowa broń i narzędzia
+zapisz("strzal_45", strzal(0.75, 0.034, 250, 2600, 200, 70, 0.055, 0.22, [(0.07, 0.24), (0.14, 0.14)]), 0.85)
+zapisz("strzal_762", strzal(1.0, 0.050, 200, 3200, 180, 48, 0.08, 0.30, [(0.07, 0.30), (0.13, 0.20), (0.21, 0.12)]))
+zapisz("strzal_76251", strzal(1.25, 0.060, 160, 3000, 160, 40, 0.10, 0.40, [(0.08, 0.34), (0.15, 0.24), (0.24, 0.16), (0.36, 0.08)]))
+zapisz("strzal_12", strzal(1.1, 0.070, 120, 2200, 150, 38, 0.11, 0.34, [(0.07, 0.30), (0.14, 0.2), (0.22, 0.12)]))
+x = przesun(filtr(szum(0.12), 500, 2500) * np.linspace(0.3, 1, int(SR * 0.12)) * 0.5, 0.0, 0.42) + przesun(stuk(800, 0.02, 0.08) * 1.2, 0.11, 0.42) + przesun(filtr(szum(0.1), 500, 2500) * 0.4 * np.hanning(int(SR * 0.1)), 0.2, 0.42) + przesun(stuk(1000, 0.02, 0.08) * 1.3, 0.29, 0.42)
+zapisz("czolenko", x, 0.75)
+czas = t(0.5)
+x = sum(a * np.sin(2 * np.pi * f * czas + los.random() * 6) * np.exp(-czas / tau) for f, a, tau in ((2300, 1.0, 0.05), (3900, 0.6, 0.03), (5600, 0.4, 0.02), (700, 0.5, 0.03)))
+x += przesun(filtr(szum(0.25), gora=500) * wygas(0.25, 0.05), 0.0, 0.5) + przesun(filtr(szum(0.3), 800, 3000) * wygas(0.3, 0.08) * 0.3, 0.05, 0.5)
+zapisz("kilof", x, 0.8)

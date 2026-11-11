@@ -4,6 +4,8 @@ Gra FPP dla jednego gracza: polski pluton współczesnego wojska odcięty w umie
 
 ## Stan
 
+**Build 5 — Ruda i naboje.** Pięć nowych broni (strzelba, karabin wyborowy z lunetą, „Granit”, „Gabro”, „Weteran”), żyły rudy, oprawianie zwłok, zbieranie łusek, piec hutniczy i stół rusznikarski do składania amunicji.
+
 **Build 4 — Ekstrakcja.** Baza ze skrytką, odprawa, trzy wyjścia z kopalni, Przebudzenie lochu, głód i pragnienie, biwak z zapisem, zapis stanu bazy.
 
 **Build 3 — Ekwipunek.** Siatka przedmiotów z kieszeniami, kamizelką, plecakiem i relikwiarzem, magazynki i leki jako przedmioty, waga, skrzynie i zwłoki do przeszukania.
@@ -32,7 +34,8 @@ Plan kolejnych buildów: `docs/PLAN.md`. Lista zmian: `docs/ZMIANY.md`. Projekt 
 | R | Przeładowanie taktyczne (magazynek wraca do kamizelki) |
 | R dwa razy | Przeładowanie szybkie (magazynek ląduje na ziemi, F podnosi) |
 | T | Sprawdzenie magazynka (licznika naboi nie ma) |
-| B | Tryb ognia |
+| B | Tryb ognia; w strzelbie rodzaj ładowanego naboju |
+| V | Oprawienie zwłok nożem |
 | 1 / 2 | Karabinek / pistolet |
 | 4–8 | Leki: bandaż, opatrunek, szyna, apteczka, przeciwbólowe |
 | Tab | Ekwipunek (LPM przeciąga, R obraca, Ctrl+LPM przenosi, PPM wyrzuca, dwuklik używa lub zakłada) |

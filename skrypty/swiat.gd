@@ -21,6 +21,7 @@ var _mat_sladow := {}
 var _mat_luska: StandardMaterial3D
 var _bryzgi: Array[CPUParticles3D] = []
 var _i_bryzg := 0
+var _skupiska: Array = []      ## łuski do zebrania: {poz, kal: {kaliber: liczba}}
 
 
 func przygotuj_swiat() -> void:
@@ -65,7 +66,7 @@ func stworz_gracza(pozycja: Vector3, obrot_y: float) -> void:
 	gracz.position = pozycja
 	gracz.rotation.y = obrot_y
 	add_child(gracz)
-	for id in ["kwarc", "jaspis"]:
+	for id in [Ekwipunek.bron_glowna, Ekwipunek.bron_boczna]:
 		var b := Bron.new()
 		gracz.kamera.add_child(b)
 		b.przygotuj(id, gracz)
@@ -212,6 +213,74 @@ func magazynek_w_zasiegu() -> Node3D:
 			odl = dd
 			najlepszy = m
 	return najlepszy
+
+
+## Łuska spadła na ziemię: zapamiętaj, żeby dało się ją później zebrać.
+func dodaj_luske(kaliber: String, pozycja: Vector3) -> void:
+	for sk in _skupiska:
+		if (sk["poz"] as Vector3).distance_to(pozycja) < 3.0:
+			sk["kal"][kaliber] = int(sk["kal"].get(kaliber, 0)) + 1
+			return
+	_skupiska.append({"poz": pozycja, "kal": {kaliber: 1}})
+
+
+func _skupisko_w_zasiegu() -> Dictionary:
+	for sk in _skupiska:
+		var n := 0
+		for k in sk["kal"]:
+			n += int(sk["kal"][k])
+		if n >= 3 and (sk["poz"] as Vector3).distance_to(gracz.global_position) < 2.6:
+			return sk
+	return {}
+
+
+func _martwy_do_oprawienia() -> Wrog:
+	for w in wrogowie:
+		if is_instance_valid(w) and not w.zyje and not w.oprawiony and not (w.d["oprawa"] as Array).is_empty() and w.global_position.distance_to(gracz.global_position) < 2.1:
+			return w
+	return null
+
+
+## Podpowiedzi wspólne dla każdej lokacji, o niższym priorytecie niż własne.
+func podpowiedz_wspolna() -> String:
+	if _martwy_do_oprawienia() != null:
+		return tr("E_PRZESZUKAJ") + "   " + tr("OPRAW_PODP")
+	if not _skupisko_w_zasiegu().is_empty():
+		return tr("LUSKI_PODP")
+	return ""
+
+
+func uzyj_wspolne(gra: Node) -> bool:
+	var sk := _skupisko_w_zasiegu()
+	if sk.is_empty():
+		return false
+	gracz.zdrowie.zacznij_czynnosc("ZBIERANIE", 3.0, func():
+		for k in sk["kal"]:
+			var n := int(floor(int(sk["kal"][k]) * 0.6))
+			if n > 0:
+				Ekwipunek.dodaj_zasob(Amunicja.luski(k), n)
+		_skupiska.erase(sk)
+		gra.hud.komunikat(tr("ZEBRANO_LUSKI")))
+	return true
+
+
+## Oprawianie zwłok nożem: części trafiają do łupu na zwłokach.
+func opraw(gra: Node) -> void:
+	var w := _martwy_do_oprawienia()
+	if w == null:
+		return
+	gracz.zdrowie.zacznij_czynnosc("OPRAWIANIE", 4.0, func():
+		if not is_instance_valid(w):
+			return
+		w.oprawiony = true
+		for cz in w.d["oprawa"]:
+			if randf() <= float(cz[2]):
+				var p := Ekwipunek.nowy(cz[0], {"ile": int(cz[1])})
+				w.pojemnik.wloz_gdziekolwiek(p)
+		krew(w.global_position + Vector3.UP * 0.3, Vector3.DOWN, 1.5)
+		Dzwiek.w_swiecie("cialo", w.global_position, -3.0, 0.2, 6.0)
+		gra.hud.komunikat(tr("OPRAWIONO")),
+		func(): Dzwiek.w_swiecie("cialo", gracz.global_position, -8.0, 0.3, 5.0))
 
 
 func wyczysc() -> void:

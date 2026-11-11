@@ -9,6 +9,11 @@ signal komunikat(tekst: String)
 const PRZEDMIOTY := {
 	"mag_kwarc": {"nazwa": "P_MAG_KWARC", "w": 1, "h": 2, "masa": 0.12, "typ": "mag", "kolor": "3d3a33", "bron": "kwarc", "poj": 30, "kaliber": "5.56x45"},
 	"mag_jaspis": {"nazwa": "P_MAG_JASPIS", "w": 1, "h": 1, "masa": 0.08, "typ": "mag", "kolor": "34363a", "bron": "jaspis", "poj": 15, "kaliber": "9x19"},
+	"mag_granit": {"nazwa": "P_MAG_GRANIT", "w": 1, "h": 2, "masa": 0.33, "typ": "mag", "kolor": "4a2a1c", "bron": "granit", "poj": 30, "kaliber": "7.62x39"},
+	"mag_gabro": {"nazwa": "P_MAG_GABRO", "w": 1, "h": 2, "masa": 0.15, "typ": "mag", "kolor": "2e3034", "bron": "gabro", "poj": 25, "kaliber": "9x19"},
+	"mag_krzemien": {"nazwa": "P_MAG_KRZEMIEN", "w": 1, "h": 1, "masa": 0.20, "typ": "mag", "kolor": "3a3d2e", "bron": "krzemien", "poj": 10, "kaliber": "7.62x51"},
+	"mag_weteran": {"nazwa": "P_MAG_WETERAN", "w": 1, "h": 1, "masa": 0.07, "typ": "mag", "kolor": "4a4d51", "bron": "weteran", "poj": 7, "kaliber": ".45"},
+	"rura_lupek": {"nazwa": "BRON_LUPEK", "w": 1, "h": 1, "masa": 0.0, "typ": "wewn", "kolor": "232427", "bron": "lupek", "poj": 6, "kaliber": "12/70"},
 	"paczka_556": {"nazwa": "P_PACZKA_556", "w": 1, "h": 1, "masa": 0.03, "typ": "amunicja", "kolor": "5a5231", "kaliber": "5.56x45", "poj": 30},
 	"paczka_9": {"nazwa": "P_PACZKA_9", "w": 1, "h": 1, "masa": 0.03, "typ": "amunicja", "kolor": "5a4a31", "kaliber": "9x19", "poj": 50},
 	"bandaz": {"nazwa": "LEK_BANDAZ", "w": 1, "h": 1, "masa": 0.05, "typ": "lek", "kolor": "8a8676"},
@@ -21,6 +26,31 @@ const PRZEDMIOTY := {
 	"racja": {"nazwa": "P_RACJA", "w": 1, "h": 2, "masa": 0.55, "typ": "jedzenie", "kolor": "5b5a3c", "sytosc": 80.0, "woda": 10.0},
 	"manierka": {"nazwa": "P_MANIERKA", "w": 1, "h": 2, "masa": 0.30, "typ": "picie", "kolor": "4f5a3e", "woda": 35.0, "porcje": 3},
 	"buklak": {"nazwa": "P_BUKLAK", "w": 1, "h": 1, "masa": 0.15, "typ": "picie", "kolor": "5c4630", "woda": 35.0, "porcje": 1},
+	"paczka_45": {"nazwa": "P_PACZKA_45", "w": 1, "h": 1, "masa": 0.03, "typ": "amunicja", "kolor": "5a4431", "kaliber": ".45", "poj": 50},
+	"paczka_12": {"nazwa": "P_PACZKA_12", "w": 1, "h": 1, "masa": 0.03, "typ": "amunicja", "kolor": "6a2f28", "kaliber": "12/70", "poj": 25},
+	"paczka_762x39": {"nazwa": "P_PACZKA_762X39", "w": 1, "h": 1, "masa": 0.03, "typ": "amunicja", "kolor": "5a4f2a", "kaliber": "7.62x39", "poj": 30},
+	"paczka_762x51": {"nazwa": "P_PACZKA_762X51", "w": 1, "h": 1, "masa": 0.03, "typ": "amunicja", "kolor": "4f5a2a", "kaliber": "7.62x51", "poj": 20},
+	"luski_9": {"nazwa": "P_LUSKI_9", "w": 1, "h": 1, "masa": 0.004, "typ": "surowiec", "kolor": "8a742e", "stos": 120},
+	"luski_45": {"nazwa": "P_LUSKI_45", "w": 1, "h": 1, "masa": 0.006, "typ": "surowiec", "kolor": "8a742e", "stos": 120},
+	"luski_556": {"nazwa": "P_LUSKI_556", "w": 1, "h": 1, "masa": 0.006, "typ": "surowiec", "kolor": "8a742e", "stos": 120},
+	"luski_12": {"nazwa": "P_LUSKI_12", "w": 1, "h": 1, "masa": 0.008, "typ": "surowiec", "kolor": "7a3a2e", "stos": 60},
+	"luski_762x39": {"nazwa": "P_LUSKI_762X39", "w": 1, "h": 1, "masa": 0.007, "typ": "surowiec", "kolor": "6f6a3e", "stos": 120},
+	"luski_762x51": {"nazwa": "P_LUSKI_762X51", "w": 1, "h": 1, "masa": 0.011, "typ": "surowiec", "kolor": "8a742e", "stos": 80},
+	"kilof": {"nazwa": "P_KILOF", "w": 1, "h": 3, "masa": 2.4, "typ": "narzedzie", "kolor": "4a3a2a"},
+	"ruda_miedzi": {"nazwa": "P_RUDA_MIEDZI", "w": 1, "h": 1, "masa": 1.5, "typ": "surowiec", "kolor": "5a6f52", "stos": 4},
+	"ruda_olowiu": {"nazwa": "P_RUDA_OLOWIU", "w": 1, "h": 1, "masa": 1.8, "typ": "surowiec", "kolor": "55585f", "stos": 4},
+	"ruda_zelaza": {"nazwa": "P_RUDA_ZELAZA", "w": 1, "h": 1, "masa": 1.6, "typ": "surowiec", "kolor": "6a4a3a", "stos": 4},
+	"siarka": {"nazwa": "P_SIARKA", "w": 1, "h": 1, "masa": 0.3, "typ": "surowiec", "kolor": "9a8f2e", "stos": 10},
+	"saletra": {"nazwa": "P_SALETRA", "w": 1, "h": 1, "masa": 0.3, "typ": "surowiec", "kolor": "9a9a90", "stos": 10},
+	"wegiel": {"nazwa": "P_WEGIEL", "w": 1, "h": 1, "masa": 0.2, "typ": "surowiec", "kolor": "232323", "stos": 10},
+	"sztabka_mosiadzu": {"nazwa": "P_SZT_MOSIADZ", "w": 1, "h": 1, "masa": 0.5, "typ": "surowiec", "kolor": "a8842e", "stos": 10},
+	"sztabka_olowiu": {"nazwa": "P_SZT_OLOW", "w": 1, "h": 1, "masa": 0.6, "typ": "surowiec", "kolor": "5c5f66", "stos": 10},
+	"sztabka_stali": {"nazwa": "P_SZT_STAL", "w": 1, "h": 1, "masa": 0.5, "typ": "surowiec", "kolor": "7a7f86", "stos": 10},
+	"proch": {"nazwa": "P_PROCH", "w": 1, "h": 1, "masa": 0.003, "typ": "surowiec", "kolor": "2e2a26", "stos": 300},
+	"splonki": {"nazwa": "P_SPLONKI", "w": 1, "h": 1, "masa": 0.001, "typ": "surowiec", "kolor": "b08d57", "stos": 300},
+	"kosc": {"nazwa": "P_KOSC", "w": 1, "h": 1, "masa": 0.3, "typ": "surowiec", "kolor": "b9b29a", "stos": 6},
+	"sciegna": {"nazwa": "P_SCIEGNA", "w": 1, "h": 1, "masa": 0.1, "typ": "surowiec", "kolor": "8a5a52", "stos": 6},
+	"gruczol": {"nazwa": "P_GRUCZOL", "w": 1, "h": 1, "masa": 0.15, "typ": "surowiec", "kolor": "5a7a3a", "stos": 4},
 	"monety": {"nazwa": "P_MONETY", "w": 1, "h": 1, "masa": 0.15, "typ": "lup", "kolor": "8f7a2e"},
 	"relikwia": {"nazwa": "P_RELIKWIA", "w": 1, "h": 2, "masa": 0.60, "typ": "lup", "kolor": "6e5a7a"},
 	"klucz": {"nazwa": "P_KLUCZ", "w": 1, "h": 1, "masa": 0.05, "typ": "lup", "kolor": "5c5f63"},
@@ -31,8 +61,7 @@ const PRZEDMIOTY := {
 	"plecak_szturmowy": {"nazwa": "P_PLECAK_SZT", "w": 3, "h": 3, "masa": 1.2, "typ": "plecak", "kolor": "454a34", "siatka": Vector2i(4, 5)},
 	"plecak_patrolowy": {"nazwa": "P_PLECAK_PAT", "w": 3, "h": 4, "masa": 1.8, "typ": "plecak", "kolor": "3f4530", "siatka": Vector2i(5, 6)},
 }
-const MASA_NABOJU := {"5.56x45": 0.012, "9x19": 0.012}
-const MASA_BRONI := 4.4          ## karabinek i pistolet bez magazynków
+const MASA_NABOJU := {"5.56x45": 0.012, "9x19": 0.012, ".45": 0.021, "12/70": 0.045, "7.62x39": 0.016, "7.62x51": 0.024}
 const LIMIT_LEKKI := 25.0
 const LIMIT_CIEZKI := 40.0
 
@@ -42,6 +71,8 @@ var plecak: Pojemnik            ## null, gdy plecak zrzucony albo brak
 var relikwiarz: Pojemnik
 var kamizelka_p := {}           ## przedmiot kamizelki
 var plecak_p := {}              ## przedmiot plecaka ({} = brak)
+var bron_glowna := "kwarc"
+var bron_boczna := "jaspis"
 var stan_broni := {}            ## id broni -> {"mag": przedmiot albo {}, "komora": typ}
 var ladowanie := {}             ## trwające ładowanie magazynka: {mag, paczka, t}
 var skrytka: Pojemnik           ## skrytka w bazie
@@ -84,6 +115,22 @@ func _zapas_startowy() -> void:
 	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_556", "A_556_AP", 20))
 	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_9", "A_9_FMJ"))
 	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_9", "A_9_HP"))
+	skrytka.wloz_gdziekolwiek(nowy("kilof"))
+	for i in 4:
+		skrytka.wloz_gdziekolwiek(nowy_magazynek("mag_granit", "A_762_PS"))
+		skrytka.wloz_gdziekolwiek(nowy_magazynek("mag_gabro", "A_9_FMJ"))
+	for i in 3:
+		skrytka.wloz_gdziekolwiek(nowy_magazynek("mag_krzemien", "A_76251_FMJ"))
+		skrytka.wloz_gdziekolwiek(nowy_magazynek("mag_weteran", "A_45_FMJ"))
+	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_762x39", "A_762_PS"))
+	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_762x39", "A_762_HP"))
+	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_12", "A_12_SRUT"))
+	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_12", "A_12_BRENEKA", 15))
+	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_762x51", "A_76251_FMJ"))
+	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_762x51", "A_76251_AP", 10))
+	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_45", "A_45_FMJ", 35))
+	dodaj_zasob("splonki", 120, true)
+	dodaj_zasob("proch", 60, true)
 	for id in ["racja", "racja", "racja", "konserwa", "konserwa", "suchary", "manierka", "bandaz", "bandaz", "bandaz", "opatrunek", "opatrunek", "szyna", "apteczka", "przeciwbolowe", "pas", "chlebak", "plecak_patrolowy"]:
 		skrytka.wloz_gdziekolwiek(nowy(id))
 
@@ -130,6 +177,8 @@ func nowy_zestaw() -> void:
 	plecak.wloz_gdziekolwiek(nowy("manierka"))
 	sytosc = 100.0
 	nawodnienie = 100.0
+	bron_glowna = "kwarc"
+	bron_boczna = "jaspis"
 	stan_broni = {
 		"kwarc": {"mag": nowy_magazynek("mag_kwarc", "A_556_FMJ", "", 29), "komora": "A_556_FMJ"},
 		"jaspis": {"mag": nowy_magazynek("mag_jaspis", "A_9_FMJ", "", 14), "komora": "A_9_FMJ"},
@@ -147,6 +196,22 @@ func po_smierci() -> void:
 	na_wyprawie = false
 	polegli += 1
 	zmiana.emit()
+
+
+## Stan broni z plutonowej zbrojowni; przy pierwszym użyciu broń ma załadowany magazynek.
+func stan(id: String) -> Dictionary:
+	if not stan_broni.has(id):
+		var bd: Dictionary = Bron.DANE[id]
+		var m: Dictionary
+		if bd.get("rurowy", false):
+			var naboje := []
+			for i in int(bd["poj"]) - 1:
+				naboje.append(bd["amunicja"])
+			m = nowy("rura_" + id, {"naboje": naboje})
+		else:
+			m = nowy_magazynek("mag_" + id, bd["amunicja"], "", int(bd["poj"]) - 1)
+		stan_broni[id] = {"mag": m, "komora": bd["amunicja"]}
+	return stan_broni[id]
 
 
 func _zaloz_kamizelke(p: Dictionary) -> void:
@@ -201,7 +266,10 @@ func masa_przedmiotu(p: Dictionary) -> float:
 	if dane.has("naboje"):
 		m += dane["naboje"].size() * float(MASA_NABOJU[def["kaliber"]])
 	if dane.has("ile"):
-		m += int(dane["ile"]) * float(MASA_NABOJU[def["kaliber"]])
+		if def.has("kaliber"):
+			m += int(dane["ile"]) * float(MASA_NABOJU[def["kaliber"]])
+		else:
+			m = float(def["masa"]) * int(dane["ile"])
 	if dane.has("porcje"):
 		m += int(dane["porcje"]) * 0.33
 	if dane.has("pojemnik") and dane["pojemnik"] != null:
@@ -210,12 +278,12 @@ func masa_przedmiotu(p: Dictionary) -> float:
 
 
 func masa() -> float:
-	var m := MASA_BRONI + kieszenie.masa() + kamizelka.masa() + relikwiarz.masa()
+	var m: float = float(Bron.DANE[bron_glowna]["masa"]) + float(Bron.DANE[bron_boczna]["masa"]) + kieszenie.masa() + kamizelka.masa() + relikwiarz.masa()
 	m += masa_przedmiotu(kamizelka_p)
 	if not plecak_p.is_empty():
 		m += masa_przedmiotu(plecak_p)
-	for id in stan_broni:
-		var mg: Dictionary = stan_broni[id]["mag"]
+	for id in [bron_glowna, bron_boczna]:
+		var mg: Dictionary = stan(id)["mag"]
 		if not mg.is_empty():
 			m += masa_przedmiotu(mg)
 	return m
@@ -445,7 +513,7 @@ func _stan() -> Dictionary:
 	for id in stan_broni:
 		bron[id] = {"mag": Pojemnik.przedmiot_do_danych(stan_broni[id]["mag"]), "komora": stan_broni[id]["komora"]}
 	return {
-		"wersja": 1, "kieszenie": kieszenie.do_danych(), "kamizelka": kamizelka.do_danych(),
+		"wersja": 2, "glowna": bron_glowna, "boczna": bron_boczna, "kieszenie": kieszenie.do_danych(), "kamizelka": kamizelka.do_danych(),
 		"relikwiarz": relikwiarz.do_danych(), "skrytka": skrytka.do_danych(),
 		"kamizelka_p": Pojemnik.przedmiot_do_danych(kamizelka_p), "plecak_p": Pojemnik.przedmiot_do_danych(plecak_p),
 		"bron": bron, "sytosc": sytosc, "nawodnienie": nawodnienie, "na_wyprawie": na_wyprawie,
@@ -464,6 +532,8 @@ func _ustaw_stan(d: Dictionary) -> void:
 	stan_broni = {}
 	for id in d["bron"]:
 		stan_broni[id] = {"mag": Pojemnik.przedmiot_z_danych(d["bron"][id]["mag"]), "komora": d["bron"][id]["komora"]}
+	bron_glowna = d.get("glowna", "kwarc")
+	bron_boczna = d.get("boczna", "jaspis")
 	sytosc = float(d["sytosc"])
 	nawodnienie = float(d["nawodnienie"])
 	na_wyprawie = bool(d["na_wyprawie"])
@@ -485,7 +555,7 @@ func wczytaj_baze() -> bool:
 	if not FileAccess.file_exists(PLIK_BAZY):
 		return false
 	var d = str_to_var(FileAccess.get_file_as_string(PLIK_BAZY))
-	if not (d is Dictionary) or int(d.get("wersja", 0)) != 1:
+	if not (d is Dictionary) or int(d.get("wersja", 0)) != 2:
 		return false
 	_ustaw_stan(d)
 	return true
@@ -507,3 +577,96 @@ func wczytaj_biwak() -> Dictionary:
 	var d = str_to_var(FileAccess.get_file_as_string(PLIK_BIWAKU))
 	DirAccess.remove_absolute(PLIK_BIWAKU)
 	return d if d is Dictionary else {}
+
+
+# ====================================================================== surowce w stosach
+
+func _zrodla(ze_skrytka: bool) -> Array:
+	var l := pojemniki()
+	if ze_skrytka:
+		l.append(skrytka)
+	return l
+
+
+func ile_zasobu(id: String, ze_skrytka := false) -> int:
+	var n := 0
+	for poj in _zrodla(ze_skrytka):
+		for p in poj.rzeczy:
+			if p["id"] == id:
+				n += int(p["dane"].get("ile", 1))
+	return n
+
+
+func zuzyj_zasob(id: String, ile: int, ze_skrytka := false) -> bool:
+	if ile_zasobu(id, ze_skrytka) < ile:
+		return false
+	for poj in _zrodla(ze_skrytka):
+		for p in poj.rzeczy.duplicate():
+			if p["id"] != id or ile <= 0:
+				continue
+			var ma := int(p["dane"].get("ile", 1))
+			var bierz := mini(ma, ile)
+			ile -= bierz
+			if bierz >= ma:
+				poj.usun(p)
+			else:
+				p["dane"]["ile"] = ma - bierz
+	zmiana.emit()
+	return true
+
+
+## Dodaje surowiec, dopełniając istniejące stosy. Zwraca liczbę sztuk, które się nie zmieściły.
+func dodaj_zasob(id: String, ile: int, do_skrytki := false) -> int:
+	var stos: int = PRZEDMIOTY[id].get("stos", 1)
+	var cele: Array = [skrytka] if do_skrytki else [plecak, kieszenie, kamizelka]
+	for poj in cele:
+		if poj == null:
+			continue
+		for p in poj.rzeczy:
+			if p["id"] == id and ile > 0:
+				var wolne := stos - int(p["dane"].get("ile", 1))
+				var daj := mini(wolne, ile)
+				if daj > 0:
+					p["dane"]["ile"] = int(p["dane"].get("ile", 1)) + daj
+					ile -= daj
+	while ile > 0:
+		var daj := mini(stos, ile)
+		var p := nowy(id, {"ile": daj})
+		var ok := false
+		for poj in cele:
+			if poj != null and poj.wloz_gdziekolwiek(p):
+				ok = true
+				break
+		if not ok:
+			break
+		ile -= daj
+	zmiana.emit()
+	return ile
+
+
+## Dodaje naboje danego typu, dopełniając paczki tego samego typu.
+func dodaj_naboje(typ: String, ile: int, do_skrytki := false) -> int:
+	var id: String = Amunicja.paczka(Amunicja.TYPY[typ]["kaliber"])
+	var poj_max: int = PRZEDMIOTY[id]["poj"]
+	var cele: Array = [skrytka] if do_skrytki else [plecak, kieszenie, kamizelka]
+	for poj in cele:
+		if poj == null:
+			continue
+		for p in poj.rzeczy:
+			if p["id"] == id and p["dane"]["typ"] == typ and ile > 0:
+				var daj := mini(poj_max - int(p["dane"]["ile"]), ile)
+				p["dane"]["ile"] = int(p["dane"]["ile"]) + daj
+				ile -= daj
+	while ile > 0:
+		var daj := mini(poj_max, ile)
+		var p := nowa_paczka(id, typ, daj)
+		var ok := false
+		for poj in cele:
+			if poj != null and poj.wloz_gdziekolwiek(p):
+				ok = true
+				break
+		if not ok:
+			break
+		ile -= daj
+	zmiana.emit()
+	return ile

@@ -29,7 +29,64 @@ const DANE := {
 		"dzw_strzal": "strzal_9", "skok_zamka": 0.036, "zoom": 0.92, "zamek_zostaje": true,
 		"luska": Vector3(0.0095, 0.0095, 0.019),
 	},
+	"weteran": {
+		"nazwa": "BRON_WETERAN", "kaliber": ".45", "rpm": 380.0,
+		"tryby": ["TRYB_POJ"], "masa": 1.1, "dlugosc": 0.52,
+		"odrzut_pion": 2.5, "odrzut_bok": 0.8, "odrzut_tyl": 0.9, "odrzut_kamera": 0.95,
+		"czas_celu": 0.21, "poj": 7, "amunicja": "A_45_FMJ",
+		"model": "res://zasoby/modele/weteran.glb",
+		"biodro": Vector3(0.085, -0.135, -0.40), "biodro_rot": Vector3(0.0, 0.03, -0.04),
+		"t_takt": 2.3, "t_szybkie": 1.6, "rozrzut_moa": 7.0,
+		"dzw_strzal": "strzal_45", "skok_zamka": 0.038, "zoom": 0.92, "zamek_zostaje": true,
+		"luska": Vector3(0.012, 0.012, 0.023),
+	},
+	"gabro": {
+		"nazwa": "BRON_GABRO", "kaliber": "9x19", "rpm": 640.0,
+		"tryby": ["TRYB_POJ", "TRYB_SERIA"], "masa": 2.2, "dlugosc": 0.58,
+		"odrzut_pion": 0.75, "odrzut_bok": 0.5, "odrzut_tyl": 0.7, "odrzut_kamera": 0.35,
+		"czas_celu": 0.24, "poj": 25, "amunicja": "A_9_FMJ",
+		"model": "res://zasoby/modele/gabro.glb",
+		"biodro": Vector3(0.095, -0.150, -0.30), "biodro_rot": Vector3(0.0, 0.04, -0.06),
+		"t_takt": 2.5, "t_szybkie": 1.8, "rozrzut_moa": 4.0,
+		"dzw_strzal": "strzal_9", "skok_zamka": 0.05, "zoom": 0.88, "zamek_zostaje": false,
+		"luska": Vector3(0.0095, 0.0095, 0.019),
+	},
+	"granit": {
+		"nazwa": "BRON_GRANIT", "kaliber": "7.62x39", "rpm": 600.0,
+		"tryby": ["TRYB_POJ", "TRYB_SERIA"], "masa": 3.3, "dlugosc": 0.72,
+		"odrzut_pion": 1.35, "odrzut_bok": 0.8, "odrzut_tyl": 1.15, "odrzut_kamera": 0.75,
+		"czas_celu": 0.31, "poj": 30, "amunicja": "A_762_PS",
+		"model": "res://zasoby/modele/granit.glb",
+		"biodro": Vector3(0.105, -0.158, -0.225), "biodro_rot": Vector3(0.0, 0.045, -0.06),
+		"t_takt": 3.0, "t_szybkie": 2.1, "rozrzut_moa": 3.5,
+		"dzw_strzal": "strzal_762", "skok_zamka": 0.075, "zoom": 0.84, "zamek_zostaje": false,
+		"luska": Vector3(0.0065, 0.0065, 0.039),
+	},
+	"lupek": {
+		"nazwa": "BRON_LUPEK", "kaliber": "12/70", "rpm": 70.0,
+		"tryby": ["TRYB_POJ"], "masa": 3.6, "dlugosc": 0.82,
+		"odrzut_pion": 2.6, "odrzut_bok": 0.9, "odrzut_tyl": 2.0, "odrzut_kamera": 1.6,
+		"czas_celu": 0.33, "poj": 6, "amunicja": "A_12_SRUT", "rurowy": true, "repetowanie": 0.55,
+		"model": "res://zasoby/modele/lupek.glb",
+		"biodro": Vector3(0.105, -0.152, -0.20), "biodro_rot": Vector3(0.0, 0.045, -0.06),
+		"t_naboj": 0.55, "rozrzut_moa": 8.0, "rozrzut_srutu": 0.045,
+		"dzw_strzal": "strzal_12", "skok_zamka": 0.0, "zoom": 0.88, "zamek_zostaje": false,
+		"luska": Vector3(0.020, 0.020, 0.07),
+	},
+	"krzemien": {
+		"nazwa": "BRON_KRZEMIEN", "kaliber": "7.62x51", "rpm": 60.0,
+		"tryby": ["TRYB_POJ"], "masa": 6.0, "dlugosc": 0.92,
+		"odrzut_pion": 2.0, "odrzut_bok": 0.5, "odrzut_tyl": 1.6, "odrzut_kamera": 1.25,
+		"czas_celu": 0.42, "poj": 10, "amunicja": "A_76251_FMJ", "repetowanie": 1.0, "luneta": 0.22,
+		"model": "res://zasoby/modele/krzemien.glb",
+		"biodro": Vector3(0.105, -0.155, -0.24), "biodro_rot": Vector3(0.0, 0.045, -0.06),
+		"t_takt": 3.2, "t_szybkie": 2.4, "rozrzut_moa": 0.8,
+		"dzw_strzal": "strzal_76251", "skok_zamka": 0.075, "zoom": 0.84, "zamek_zostaje": false,
+		"luska": Vector3(0.0075, 0.0075, 0.051),
+	},
 }
+const GLOWNE := ["kwarc", "granit", "gabro", "lupek", "krzemien"]
+const BOCZNE := ["jaspis", "weteran"]
 
 
 class Sprezyna:
@@ -63,6 +120,11 @@ var _n_mag: Node3D
 var _n_zamek: Node3D
 var _n_reka_l: Node3D
 var _poz_mag := Vector3.ZERO
+var _n_czolenko: Node3D
+var _poz_czolenko := Vector3.ZERO
+var _repet_t := 0.0              ## trwające repetowanie (czółenko, zamek czterotaktowy)
+var typ_ladowany := ""           ## strzelba: rodzaj naboju dokładanego do rury
+var luneta := 0.0                ## 0..1: jak bardzo celownik optyczny zasłania widok
 var _poz_zamek := Vector3.ZERO
 var _poz_reka_l := Vector3.ZERO
 var _poz_cel := Vector3.ZERO
@@ -95,9 +157,10 @@ func przygotuj(id_broni: String, wlasciciel: Gracz) -> void:
 	d = DANE[id]
 	gracz = wlasciciel
 	_wczytaj_model()
-	var st: Dictionary = Ekwipunek.stan_broni[id]
+	var st: Dictionary = Ekwipunek.stan(id)
 	komora = st["komora"]
 	_ustaw_mag(st["mag"])
+	typ_ladowany = d["amunicja"]
 	_zbuduj_blysk()
 	_zbuduj_latarke()
 	visible = false
@@ -116,6 +179,8 @@ func _wczytaj_model() -> void:
 	_n_mag = _znajdz("magazynek", Vector3.ZERO)
 	_n_zamek = _znajdz("zamek", Vector3.ZERO)
 	_n_reka_l = _znajdz("reka_l", Vector3.ZERO)
+	_n_czolenko = _znajdz("czolenko", Vector3.ZERO)
+	_poz_czolenko = _n_czolenko.position
 	_poz_mag = _n_mag.position
 	_poz_zamek = _n_zamek.position
 	_poz_reka_l = _n_reka_l.position
@@ -289,7 +354,7 @@ func _sprawdz_sciane(dt: float) -> void:
 func _obsluz_wejscie(dt: float, steruje: bool) -> void:
 	# ujemna reszta przenosi się na kolejny strzał: szybkostrzelność nie zależy od liczby klatek
 	_do_strzalu = maxf(_do_strzalu - dt, -0.05)
-	var wolna := _stan == "" and gracz.zdrowie.uzywa == ""
+	var wolna := _stan == "" and gracz.zdrowie.uzywa == "" and _repet_t <= 0.0
 	var chce_cel := steruje and gracz.zdrowie.uzywa == "" and Input.is_action_pressed("celuj") and not gracz.sprintuje and zablokowana < 0.35 and (_stan == "" or _stan == "okno_r")
 	if test_cel >= 0.0:
 		chce_cel = test_cel > 0.5
@@ -301,7 +366,12 @@ func _obsluz_wejscie(dt: float, steruje: bool) -> void:
 	if Input.is_action_just_pressed("latarka"):
 		_latarka.visible = not _latarka.visible
 		Dzwiek.przy_uchu("klik", -6.0)
-	if Input.is_action_just_pressed("tryb_ognia") and wolna and d["tryby"].size() > 1:
+	if Input.is_action_just_pressed("tryb_ognia") and wolna and d.get("rurowy", false):
+		var typy := Amunicja.dla_kalibru(d["kaliber"])
+		typ_ladowany = typy[(typy.find(typ_ladowany) + 1) % typy.size()]
+		komunikat.emit(tr("LADUJ") + ": " + tr(typ_ladowany))
+		Dzwiek.przy_uchu("klik", -4.0)
+	elif Input.is_action_just_pressed("tryb_ognia") and wolna and d["tryby"].size() > 1:
 		tryb = (tryb + 1) % d["tryby"].size()
 		komunikat.emit(tr(d["tryby"][tryb]))
 		Dzwiek.przy_uchu("klik", -4.0)
@@ -313,6 +383,8 @@ func _obsluz_wejscie(dt: float, steruje: bool) -> void:
 			_okno_r = 0.28
 		elif _stan == "okno_r":
 			_zacznij_przeladowanie(true)
+	if _stan == "rura" and Input.is_action_just_pressed("strzal"):
+		_stan = ""
 	var seria: bool = d["tryby"][tryb] == "TRYB_SERIA"
 	var spust := Input.is_action_pressed("strzal") if seria else Input.is_action_just_pressed("strzal")
 	if spust and wolna and _do_strzalu <= 0.0 and not gracz.sprintuje and zablokowana < 0.35 and _wyjecie >= 1.0:
@@ -330,14 +402,41 @@ func _obsluz_wejscie(dt: float, steruje: bool) -> void:
 			_do_strzalu = 0.2
 
 
+var _ost_stan := ""
+
+
 func _zacznij(stan: String, czas: float, zdarzenia: Dictionary) -> void:
+	_ost_stan = stan
 	_stan = stan
 	_t = 0.0
 	_t_max = czas
 	_zdarzenia = zdarzenia.duplicate()
 
 
+## Strzelba: naboje z paczek w kamizelce i kieszeniach, wybranego rodzaju jeśli jest.
+func _paczka_do_rury() -> Dictionary:
+	var paczki := []
+	for poj in Ekwipunek.szybkie():
+		for p in poj.rzeczy:
+			if p["id"] == Amunicja.paczka(d["kaliber"]) and int(p["dane"]["ile"]) > 0:
+				paczki.append(p)
+	for p in paczki:
+		if p["dane"]["typ"] == typ_ladowany:
+			return p
+	return paczki[0] if not paczki.is_empty() else {}
+
+
 func _zacznij_przeladowanie(szybkie: bool) -> void:
+	if d.get("rurowy", false):
+		if mag.size() >= int(d["poj"]) and komora != "":
+			_stan = ""
+			return
+		if _paczka_do_rury().is_empty():
+			_stan = ""
+			komunikat.emit(tr("BRAK_NABOI"))
+			return
+		_zacznij("rura", float(d["t_naboj"]), {0.6: "naboj"})
+		return
 	var zapas := Ekwipunek.magazynki(id)
 	if zapas.is_empty():
 		_stan = ""
@@ -360,6 +459,15 @@ func _zacznij_przeladowanie(szybkie: bool) -> void:
 
 
 func _stan_krok(dt: float) -> void:
+	if _repet_t > 0.0:
+		var bylo := _repet_t
+		_repet_t = maxf(_repet_t - dt, 0.0)
+		var calosc: float = d["repetowanie"]
+		if bylo > calosc * 0.5 and _repet_t <= calosc * 0.5:
+			Dzwiek.przy_uchu("czolenko" if d.get("rurowy", false) else "zamek", -2.0, 0.08)
+			_wyrzuc_luske()
+			if mag != null and not mag.is_empty():
+				komora = mag.pop_back()
 	if _stan == "":
 		return
 	if _stan == "okno_r":
@@ -376,6 +484,9 @@ func _stan_krok(dt: float) -> void:
 			_zdarzenie(z)
 	if p >= 1.0:
 		_stan = ""
+		# strzelba ładuje kolejne naboje, dopóki rura nie jest pełna albo gracz nie przerwie
+		if _t_max > 0.0 and _ost_stan == "rura" and mag.size() < int(d["poj"]) and not Input.is_action_pressed("strzal"):
+			_zacznij_przeladowanie(false)
 
 
 func _zdarzenie(z: String) -> void:
@@ -402,9 +513,23 @@ func _zdarzenie(z: String) -> void:
 				Dzwiek.przy_uchu("zamek", -2.0)
 		"sprawdz":
 			komunikat.emit(_opis_magazynka())
+		"naboj":
+			var p := _paczka_do_rury()
+			if not p.is_empty():
+				p["dane"]["ile"] = int(p["dane"]["ile"]) - 1
+				if komora == "" and mag.is_empty():
+					komora = p["dane"]["typ"]
+				else:
+					mag.append(p["dane"]["typ"])   # ostatni włożony nabój trafi do komory pierwszy
+				if int(p["dane"]["ile"]) <= 0:
+					Ekwipunek.wyjmij(p)
+				Ekwipunek.zmiana.emit()
+				Dzwiek.przy_uchu("klik", -2.0, 0.15)
 
 
 func _opis_magazynka() -> String:
+	if d.get("rurowy", false):
+		return "%s: %d / %d · %s" % [tr("RURA"), mag.size(), int(d["poj"]), tr("KOMORA_NABOJ" if komora != "" else "KOMORA_PUSTA")]
 	var tekst := tr("BRAK_MAG")
 	if mag != null:
 		var r := float(mag.size()) / float(d["poj"])
@@ -436,7 +561,9 @@ func _upusc_magazynek(p: Dictionary) -> void:
 func _strzal() -> void:
 	var typ := komora
 	komora = ""
-	if mag != null and not mag.is_empty():
+	if d.has("repetowanie"):
+		_repet_t = float(d["repetowanie"])
+	elif mag != null and not mag.is_empty():
 		komora = mag.pop_back()
 	_zamek_t = 0.07
 	var dane_a: Dictionary = Amunicja.TYPY[typ]
@@ -448,8 +575,14 @@ func _strzal() -> void:
 	var kier := (-baza.z + baza.x * cos(kat) * r + baza.y * sin(kat) * r).normalized()
 	var pociski := get_tree().get_first_node_in_group("pociski")
 	if pociski:
-		# start z pozycji kamery rzutowanej na oś lufy, żeby nie strzelać przez ścianę
-		pociski.wystrzel(_wylot.global_position, kier, typ, gracz)
+		var ile_srutu: int = int(dane_a.get("srut", 1))
+		for i in ile_srutu:
+			var k := kier
+			if ile_srutu > 1:
+				var r2: float = float(d.get("rozrzut_srutu", 0.04)) * sqrt(randf())
+				var kat2 := randf() * TAU
+				k = (kier + baza.x * cos(kat2) * r2 + baza.y * sin(kat2) * r2).normalized()
+			pociski.wystrzel(_wylot.global_position, k, typ, gracz)
 	# odrzut
 	var s: float = Strojenie.w["S_ODRZUT"]
 	var postawa := 0.78 if gracz.kuca else 1.0
@@ -470,7 +603,10 @@ func _strzal() -> void:
 	var swiat_h := get_tree().get_first_node_in_group("swiat")
 	if swiat_h:
 		swiat_h.halas(gracz.global_position, 55.0 * float(dane_a["halas"]))
-	_wyrzuc_luske()
+	if not d.has("repetowanie"):
+		_wyrzuc_luske()
+	if swiat_h:
+		swiat_h.dodaj_luske(d["kaliber"], gracz.global_position)
 
 
 func _wyrzuc_luske() -> void:
@@ -564,7 +700,11 @@ func _poza(dt: float) -> void:
 			rot.x += sin(clampf((p - 0.66) * 14.0, 0.0, 1.0) * PI) * 0.035
 		else:
 			_n_reka_l.position = _poz_reka_l
-	else:
+	elif _stan == "rura":
+		var p := clampf(_t / _t_max, 0.0, 1.0)
+		rot += Vector3(0.18, 0.0, 0.55) * pow(sin(p * PI), 0.5)
+		poz += Vector3(0.0, -0.02, 0.02) * sin(p * PI)
+	elif not d.get("rurowy", false):
 		_n_reka_l.position = _n_reka_l.position.lerp(_poz_reka_l, 1.0 - exp(-18.0 * dt))
 		_n_mag.position = _poz_mag
 
@@ -572,7 +712,11 @@ func _poza(dt: float) -> void:
 
 	# lekkie przybliżenie przy celowaniu
 	var bazowe: float = Strojenie.w["S_FOV"]
-	gracz.kamera.fov = lerpf(bazowe, bazowe * d["zoom"], t_cel)
+	var zoom: float = d["zoom"]
+	if d.has("luneta"):
+		zoom = lerpf(d["zoom"], d["luneta"], smoothstep(0.75, 1.0, cel))
+	gracz.kamera.fov = lerpf(bazowe, bazowe * zoom, t_cel)
+	gracz.przyblizenie = gracz.kamera.fov / bazowe
 
 
 func _efekty(dt: float) -> void:
@@ -585,4 +729,17 @@ func _efekty(dt: float) -> void:
 		cofniecie = 1.0
 	elif d["zamek_zostaje"] and komora == "":
 		cofniecie = 0.9
+	var rp := 0.0
+	if _repet_t > 0.0:
+		var calosc: float = d["repetowanie"]
+		rp = sin(clampf(1.0 - _repet_t / calosc, 0.0, 1.0) * PI)
+	if d.get("rurowy", false):
+		_n_czolenko.position = _poz_czolenko + Vector3(0, 0, 0.085 * rp)
+		_n_reka_l.position = _poz_reka_l + Vector3(0, 0, 0.085 * rp)
+	elif d.has("repetowanie"):
+		cofniecie = maxf(cofniecie, rp)
+		_n_zamek.rotation.z = -1.1 * clampf(rp * 2.0, 0.0, 1.0)
 	_n_zamek.position = _n_zamek.position.lerp(_poz_zamek + Vector3(0, 0, d["skok_zamka"] * cofniecie), 1.0 - exp(-60.0 * dt))
+	# luneta: przy pełnym złożeniu model znika, a widok zastępuje nakładka w interfejsie
+	luneta = smoothstep(0.75, 1.0, cel) if d.has("luneta") and aktywna else 0.0
+	_model.visible = luneta < 0.98

@@ -31,6 +31,7 @@ var _blysk_a := 0.0
 var _smierc: ColorRect
 var _smierc_tekst: Label
 var _potrzeby: Label
+var _luneta: ColorRect
 var _budzenie: Array[ColorRect] = []
 var _panel_odprawa: PanelContainer
 var _panel_biwak: PanelContainer
@@ -101,6 +102,30 @@ func _zbuduj_zdrowie() -> void:
 	_leki.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_pasek_uzycia = _pasek(Color("b9b08f"))
 	_umiesc(_pasek_uzycia, Control.PRESET_CENTER, -150, 170, 300, 10)
+	# nakładka lunety: czarna maska z okręgiem i krzyżem
+	_luneta = ColorRect.new()
+	_luneta.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_luneta.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sh := Shader.new()
+	sh.code = """
+shader_type canvas_item;
+uniform float sila = 1.0;
+uniform float proporcje = 1.777;
+void fragment() {
+	vec2 p = (UV - 0.5) * vec2(proporcje, 1.0);
+	float r = length(p);
+	float poza = smoothstep(0.40, 0.412, r);
+	float cienki = max(step(abs(p.x), 0.0011), step(abs(p.y), 0.0011));
+	float gruby = max(step(abs(p.x), 0.0045) * step(0.13, abs(p.y)), step(abs(p.y), 0.0045) * step(0.13, abs(p.x)));
+	COLOR = vec4(0.0, 0.0, 0.0, max(poza, max(cienki, gruby) * step(r, 0.40)) * sila);
+}
+"""
+	var msh := ShaderMaterial.new()
+	msh.shader = sh
+	_luneta.material = msh
+	_luneta.visible = false
+	_korzen.add_child(_luneta)
+	_korzen.move_child(_luneta, 1)
 	_potrzeby = _etykieta(17, Color("d9a05a"))
 	_umiesc(_potrzeby, Control.PRESET_BOTTOM_LEFT, 34, -158, 400, 44)
 	# Przebudzenie lochu: cztery znaczniki w prawym górnym rogu
@@ -171,8 +196,15 @@ func _odswiez_zdrowie(dt: float) -> void:
 		l.append("%s ×%d   [%d]" % [tr(Zdrowie.LEKI[id][0]), z.leki[id], i + 4])
 	_leki.text = "\n".join(l)
 	_pasek_uzycia.visible = z.uzywa != ""
+	if z.uzywa == "czynnosc" and not panel_otwarty():
+		_podpowiedz.text = tr(z.czynnosc_nazwa) + "…"
 	if z.uzywa != "":
 		_pasek_uzycia.value = z.uzycie_t / z.uzycie_max
+	var sila_l: float = gra.swiat.bron().luneta
+	_luneta.visible = sila_l > 0.02
+	if _luneta.visible:
+		(_luneta.material as ShaderMaterial).set_shader_parameter("sila", sila_l)
+		(_luneta.material as ShaderMaterial).set_shader_parameter("proporcje", _korzen.size.x / maxf(_korzen.size.y, 1.0))
 	var potrzeby := []
 	if Ekwipunek.sytosc < 60.0:
 		potrzeby.append("%s %d%%" % [tr("GLOD"), roundi(100.0 - Ekwipunek.sytosc)])
@@ -327,7 +359,7 @@ func _fmt(x: float) -> String:
 
 
 func odswiez() -> void:
-	_wskazowka.text = tr("TYTUL") + " · build 4 · " + tr("PODPOWIEDZ_H")
+	_wskazowka.text = tr("TYTUL") + " · build 5 · " + tr("PODPOWIEDZ_H")
 	_et_nogi.text = tr("WYTRZ_NOGI")
 	_et_rece.text = tr("WYTRZ_RECE")
 	(_panel_pomoc.find_child("naglowek", true, false) as Label).text = tr("POMOC")
@@ -345,7 +377,7 @@ func komunikat(tekst: String, czas := 2.8) -> void:
 
 
 func panel_otwarty() -> bool:
-	return _panel_stroj.visible or _panel_pomoc.visible or ekwipunek.visible or (_panel_stol != null and _panel_stol.visible) or (_panel_odprawa != null and _panel_odprawa.visible) or (_panel_biwak != null and _panel_biwak.visible)
+	return _panel_stroj.visible or _panel_pomoc.visible or ekwipunek.visible or (_panel_stol != null and _panel_stol.visible) or (_panel_odprawa != null and _panel_odprawa.visible) or (_panel_biwak != null and _panel_biwak.visible) or (_panel_rzem != null and _panel_rzem.visible)
 
 
 func zamknij_panele() -> bool:
@@ -363,6 +395,8 @@ func zamknij_panele() -> bool:
 		_panel_odprawa.visible = false
 	if _panel_biwak:
 		_panel_biwak.visible = false
+	if _panel_rzem:
+		_panel_rzem.visible = false
 	_wroc_do_gry()
 	return true
 
@@ -415,7 +449,28 @@ func otworz_odprawe() -> void:
 	v.add_child(_opis(tr("ODPRAWA_CEL"), 22, Color("e6dcc0")))
 	v.add_child(_opis(tr("ODPRAWA_OPIS")))
 	v.add_child(_opis("%s: %.1f kg" % [tr("E_OBCIAZENIE"), Ekwipunek.masa()]))
-	v.add_child(_opis("%s: %d + %d" % [tr("ODPRAWA_MAG"), Ekwipunek.magazynki("kwarc").size(), Ekwipunek.magazynki("jaspis").size()]))
+	# wybór broni z plutonowej zbrojowni
+	var wyb_g := OptionButton.new()
+	var wyb_b := OptionButton.new()
+	for id in Bron.GLOWNE:
+		wyb_g.add_item(tr(Bron.DANE[id]["nazwa"]))
+	for id in Bron.BOCZNE:
+		wyb_b.add_item(tr(Bron.DANE[id]["nazwa"]))
+	wyb_g.selected = Bron.GLOWNE.find(Ekwipunek.bron_glowna)
+	wyb_b.selected = Bron.BOCZNE.find(Ekwipunek.bron_boczna)
+	for para in [[tr("BRON_GLOWNA"), wyb_g], [tr("BRON_BOCZNA"), wyb_b]]:
+		var hw := HBoxContainer.new()
+		var lw := _opis(para[0] + ":")
+		lw.custom_minimum_size = Vector2(200, 0)
+		lw.autowrap_mode = TextServer.AUTOWRAP_OFF
+		hw.add_child(lw)
+		(para[1] as OptionButton).add_theme_font_size_override("font_size", 19)
+		hw.add_child(para[1])
+		v.add_child(hw)
+	var zmiana_broni := func(_i: int): gra.przezbroj(Bron.GLOWNE[wyb_g.selected], Bron.BOCZNE[wyb_b.selected])
+	wyb_g.item_selected.connect(zmiana_broni)
+	wyb_b.item_selected.connect(zmiana_broni)
+	v.add_child(_opis("%s: %d + %d" % [tr("ODPRAWA_MAG"), Ekwipunek.magazynki(Ekwipunek.bron_glowna).size(), Ekwipunek.magazynki(Ekwipunek.bron_boczna).size()]))
 	var jedzenie := 0
 	var woda := 0
 	for poj in Ekwipunek.pojemniki():
@@ -458,6 +513,65 @@ func otworz_biwak() -> void:
 	v.add_child(_przycisk(tr("BIWAK_ZAPISZ"), func(): gra.zapisz_biwak_i_wyjdz()))
 	v.add_child(_przycisk(tr("WROC"), zamknij_panele))
 	_otworz(_panel_biwak)
+
+
+## Piec hutniczy albo stół rusznikarski: lista receptur z przyciskami.
+var _panel_rzem: PanelContainer
+
+
+func otworz_rzemioslo(stacja: String, ze_skrytka: bool) -> void:
+	if _panel_rzem:
+		_panel_rzem.queue_free()
+	_panel_rzem = _panel(1000)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	_panel_rzem.add_child(v)
+	v.add_child(_naglowek(tr("PIEC") if stacja == "piec" else tr("RUSZNIKARZ")))
+	if ze_skrytka:
+		v.add_child(_opis(tr("R_ZE_SKRYTKA"), 16, Color("8f8872")))
+	var przewijanie := ScrollContainer.new()
+	przewijanie.custom_minimum_size = Vector2(960, 560)
+	v.add_child(przewijanie)
+	var lista := VBoxContainer.new()
+	lista.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	przewijanie.add_child(lista)
+	for r in Rzemioslo.receptury(stacja):
+		var wiersz := HBoxContainer.new()
+		var ok := Rzemioslo.mozna(r, ze_skrytka)
+		var l := _opis(Rzemioslo.opis(r), 17, Color("cfc6ad") if ok else Color("6f6a5c"))
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		l.autowrap_mode = TextServer.AUTOWRAP_OFF
+		wiersz.add_child(l)
+		var b := _przycisk(tr("WYTWORZ"), func():
+			var reszta := Rzemioslo.wykonaj(r, ze_skrytka)
+			Dzwiek.przy_uchu("zamek" if stacja != "piec" else "uderzenie", -6.0)
+			if reszta > 0:
+				komunikat(tr("R_BRAK_MIEJSCA"), 4.0)
+			otworz_rzemioslo(stacja, ze_skrytka))
+		b.add_theme_font_size_override("font_size", 17)
+		b.disabled = not ok
+		wiersz.add_child(b)
+		lista.add_child(wiersz)
+	if stacja != "piec":
+		var zrodla: Array = Ekwipunek.pojemniki()
+		if ze_skrytka:
+			zrodla.append(Ekwipunek.skrytka)
+		for poj in zrodla:
+			for p in poj.rzeczy:
+				if Ekwipunek.PRZEDMIOTY[p["id"]]["typ"] != "amunicja":
+					continue
+				var wiersz := HBoxContainer.new()
+				var l := _opis("%s: %d× %s" % [tr("R_DEMONTAZ"), int(p["dane"]["ile"]), tr(p["dane"]["typ"])], 17, Color("a89f86"))
+				l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				wiersz.add_child(l)
+				var b := _przycisk(tr("R_DEMONTAZ"), func():
+					Rzemioslo.rozbierz(p, ze_skrytka)
+					otworz_rzemioslo(stacja, ze_skrytka))
+				b.add_theme_font_size_override("font_size", 17)
+				wiersz.add_child(b)
+				lista.add_child(wiersz)
+	v.add_child(_przycisk(tr("ZAMKNIJ"), zamknij_panele))
+	_otworz(_panel_rzem)
 
 
 func przelacz_ekwipunek() -> void:
@@ -553,10 +667,14 @@ func _process(dt: float) -> void:
 		var lezy: Node3D = gra.swiat.magazynek_w_zasiegu()
 		if lezy != null:
 			tekst = tr("E_PODNIES") + ": " + tr(Ekwipunek.PRZEDMIOTY[lezy.get("przedmiot")["id"]]["nazwa"])
+		elif gra.swiat.podpowiedz_wspolna().contains("[V]"):
+			tekst = gra.swiat.podpowiedz_wspolna()
 		elif gra.swiat.pojemnik_w_zasiegu() != null:
 			tekst = tr("E_PRZESZUKAJ")
 		elif gra.swiat.podpowiedz() != "":
 			tekst = gra.swiat.podpowiedz()
+		elif gra.swiat.podpowiedz_wspolna() != "":
+			tekst = gra.swiat.podpowiedz_wspolna()
 		elif gra.swiat.bron().zablokowana > 0.35:
 			tekst = tr("BRON_ZABLOKOWANA")
 	_podpowiedz.text = tekst

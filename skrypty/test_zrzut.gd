@@ -16,6 +16,16 @@ func _ready() -> void:
 		set_process(false)
 		_test_balistyka.call_deferred()
 		return
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--zrzut-bron="):
+			_katalog = a.trim_prefix("--zrzut-bron=")
+			set_process(false)
+			_zrzuty_broni.call_deferred()
+			return
+	if "--test-rzemioslo" in OS.get_cmdline_user_args():
+		set_process(false)
+		_test_rzemioslo.call_deferred()
+		return
 	if "--test-ekstrakcja" in OS.get_cmdline_user_args():
 		set_process(false)
 		_test_ekstrakcja.call_deferred()
@@ -619,4 +629,159 @@ func _test_ekstrakcja() -> void:
 	k = gra.swiat
 	print("wznowienie: przebudzenie ", snappedf(k.przebudzenie, 0.1), ", prog ", k.prog, ", chodnik zawalony ", k.chodnik_zawalony, ", hp torsu ", snappedf(k.gracz.zdrowie.hp["tors"], 0.1), ", pozycja przy biwaku ", k.podpowiedz())
 	print("TEST EKSTRAKCJI ZAKOŃCZONY")
+	get_tree().quit()
+
+
+## Nowa broń, strzelba, zamek czterotaktowy, receptury, żyły, oprawianie, łuski.
+func _test_rzemioslo() -> void:
+	var gra := get_parent()
+	var E := Ekwipunek
+	await get_tree().create_timer(0.3).timeout
+	# każda broń główna: wyjęcie, strzał, przeładowanie
+	for id in Bron.GLOWNE:
+		gra.przezbroj(id, "weteran" if id != "kwarc" else "jaspis")
+		await get_tree().create_timer(0.8).timeout
+		gra.hud.zamknij_panele()
+		var b: Bron = gra.swiat.bron()
+		var przed: int = b.mag.size()
+		b.call("_strzal")
+		await get_tree().create_timer(1.3).timeout
+		print(id, ": mag ", przed, " -> ", b.mag.size(), ", komora '", b.komora, "', masa zestawu ", snappedf(E.masa(), 0.1))
+	# strzelba: ładowanie po naboju z paczki w kieszeni
+	gra.przezbroj("lupek", "weteran")
+	await get_tree().create_timer(0.8).timeout
+	gra.hud.zamknij_panele()
+	var s: Bron = gra.swiat.bron()
+	for i in 3:
+		s.call("_strzal")
+		await get_tree().create_timer(0.8).timeout
+	print("strzelba po 3 strzałach: rura ", s.mag.size(), ", komora '", s.komora, "'")
+	E.kieszenie.rzeczy.clear()
+	E.kieszenie.wloz_gdziekolwiek(E.nowa_paczka("paczka_12", "A_12_BRENEKA", 10))
+	s.typ_ladowany = "A_12_BRENEKA"
+	s.call("_zacznij_przeladowanie", false)
+	await get_tree().create_timer(3.0).timeout
+	print("po ładowaniu: rura ", s.mag.size(), " ", s.mag, ", w paczce ", E.kieszenie.rzeczy[0]["dane"]["ile"], ", opis: ", s.call("_opis_magazynka"))
+	gra.swiat.zmien_bron(1)
+	await get_tree().create_timer(0.8).timeout
+	var wt: Bron = gra.swiat.bron()
+	wt.call("_strzal")
+	print("weteran: mag ", wt.mag.size(), ", komora ", wt.komora)
+	# receptury w bazie (ze skrytką)
+	E.dodaj_zasob("ruda_miedzi", 4, true)
+	E.dodaj_zasob("ruda_olowiu", 2, true)
+	E.dodaj_zasob("ruda_zelaza", 2, true)
+	E.dodaj_zasob("wegiel", 3, true)
+	E.dodaj_zasob("siarka", 1, true)
+	E.dodaj_zasob("saletra", 1, true)
+	var spl0 := E.ile_zasobu("splonki", true)
+	for r in Rzemioslo.receptury("piec"):
+		Rzemioslo.wykonaj(r, true)
+	print("piec: mosiądz ", E.ile_zasobu("sztabka_mosiadzu", true), ", ołów ", E.ile_zasobu("sztabka_olowiu", true), ", stal ", E.ile_zasobu("sztabka_stali", true))
+	var stol := Rzemioslo.receptury("stol")
+	Rzemioslo.wykonaj(stol[0], true)
+	var n556 := 0
+	for r in stol:
+		if r.has("wyjscie") and r["wyjscie"].has("luski_556"):
+			Rzemioslo.wykonaj(r, true)
+	for r in stol:
+		if r.has("naboje") and r["naboje"][0] == "A_556_SS":
+			print("receptura: ", Rzemioslo.opis(r), " | można: ", Rzemioslo.mozna(r, true))
+			var przed_ss := _ile_naboi("A_556_SS")
+			Rzemioslo.wykonaj(r, true)
+			n556 = _ile_naboi("A_556_SS") - przed_ss
+	print("złożono 5,56 SS: ", n556, "; spłonki ", spl0, " -> ", E.ile_zasobu("splonki", true), "; proch ", E.ile_zasobu("proch", true), "; stal ", E.ile_zasobu("sztabka_stali", true))
+	var paczka := {}
+	for p in E.skrytka.rzeczy:
+		if p["id"] == "paczka_9" and p["dane"]["typ"] == "A_9_HP":
+			paczka = p
+	var l9 := E.ile_zasobu("luski_9", true)
+	Rzemioslo.rozbierz(paczka, true)
+	print("demontaż 50× 9 mm HP: łuski 9 mm ", l9, " -> ", E.ile_zasobu("luski_9", true), ", spłonki ", E.ile_zasobu("splonki", true))
+	# kopalnia: żyła, łuski, oprawianie
+	gra.przezbroj("kwarc", "jaspis")
+	await get_tree().create_timer(0.8).timeout
+	gra.hud.zamknij_panele()
+	gra.wyrusz()
+	await get_tree().create_timer(1.0).timeout
+	var k: Kopalnia = gra.swiat
+	for w in k.wrogowie.duplicate():
+		w.queue_free()
+	k.wrogowie.clear()
+	k.gracz.global_position = k.call("_srodek", 6, 1) + Vector3(0, 0.05, 0)
+	await get_tree().create_timer(0.3).timeout
+	print("przy żyle: ", k.podpowiedz())
+	k.uzyj(gra)
+	await get_tree().create_timer(0.2).timeout
+	print("bez kilofa: ", gra.hud.get("_komunikat").text)
+	E.plecak.wloz_gdziekolwiek(E.nowy("kilof"))
+	var m0 := E.masa()
+	var pb0: float = k.przebudzenie
+	k.uzyj(gra)
+	await get_tree().create_timer(7.4).timeout
+	print("po kuciu: ruda miedzi ", E.ile_zasobu("ruda_miedzi"), ", masa +", snappedf(E.masa() - m0, 0.01), " kg, przebudzenie +", snappedf(k.przebudzenie - pb0, 0.1), ", w żyle zostało ", k.get("_zyly")[0]["ile"])
+	var b2: Bron = k.bron()
+	for i in 6:
+		b2.call("_strzal")
+	await get_tree().create_timer(0.3).timeout
+	print("łuski: ", k.podpowiedz_wspolna())
+	k.uzyj_wspolne(gra)
+	await get_tree().create_timer(3.3).timeout
+	print("zebrano łusek 5,56: ", E.ile_zasobu("luski_556"), " z 6 strzałów")
+	var gh := k.dodaj_wroga("ghul", k.gracz.global_position + Vector3(1.2, 0, 0), 0.0)
+	gh.set_physics_process(false)
+	await get_tree().create_timer(0.2).timeout
+	gh.call("_umrzyj", Vector3(1, 0, 0))
+	await get_tree().create_timer(0.3).timeout
+	print("przy zwłokach: ", k.podpowiedz_wspolna())
+	k.opraw(gra)
+	await get_tree().create_timer(4.4).timeout
+	var czesci := []
+	for p in gh.pojemnik.rzeczy:
+		czesci.append(p["id"])
+	print("po oprawieniu: ", czesci, ", oprawiony=", gh.oprawiony)
+	k.gracz.global_position = k.call("_srodek", 18, 3) + Vector3(0, 0.05, 0)
+	await get_tree().create_timer(0.2).timeout
+	print("piec w lochu: ", k.podpowiedz())
+	print("TEST RZEMIOSŁA ZAKOŃCZONY")
+	get_tree().quit()
+
+
+func _ile_naboi(typ: String) -> int:
+	var n := 0
+	for p in Ekwipunek.skrytka.rzeczy:
+		if p["dane"].get("typ", "") == typ:
+			n += int(p["dane"]["ile"])
+	return n
+
+
+## Każda broń z biodra i w celowaniu, do kontroli zgrania przyrządów.
+func _zrzuty_broni() -> void:
+	var gra := get_parent()
+	DirAccess.make_dir_recursive_absolute(_katalog)
+	await _klatki(20)
+	for id in ["granit", "gabro", "lupek", "krzemien", "weteran"]:
+		if id == "weteran":
+			gra.przezbroj("kwarc", "weteran")
+		else:
+			gra.przezbroj(id, "jaspis")
+		await _klatki(12)
+		gra.hud.zamknij_panele()
+		var sw: Swiat = gra.swiat
+		sw.gracz.sterowanie = false
+		sw.gracz.global_position = Vector3(0.95, 0.05, -4.0)
+		sw.gracz.rotation.y = 0.0
+		sw.gracz.set("_pitch", deg_to_rad(-7.0))
+		if id == "weteran":
+			sw.zmien_bron(1)
+		await _klatki(50)
+		await _zapisz("b_%s_biodro" % id)
+		for b in sw.bronie:
+			b.test_cel = 1.0
+		await _klatki(50)
+		await _zapisz("b_%s_cel" % id)
+		sw.bron().call("_strzal")
+		await _klatki(4)
+		await _zapisz("b_%s_strzal" % id)
+		await _klatki(40)
 	get_tree().quit()

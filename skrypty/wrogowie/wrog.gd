@@ -51,6 +51,7 @@ const TYPY := {
 		"ciezki": false, "wzrok": 1.0, "krwawi": true, "oglusza_od": 30.0, "skala_tors": Vector3(0.9, 1, 1),
 		"ryk": "ghul_ryk", "krok": "krok", "zasieg_krokow": 5.0,
 		"lup": [["monety", 1], ["klucz", 1]], "lup_min": 0, "lup_max": 1,
+		"oprawa": [["kosc", 1, 1.0], ["sciegna", 1, 0.8], ["gruczol", 1, 0.4]],
 	},
 	"knecht": {
 		"model": "res://zasoby/modele/knecht.glb", "strefy": STREFY_KNECHT, "szczeliny": [],
@@ -58,6 +59,7 @@ const TYPY := {
 		"ciezki": false, "wzrok": 0.8, "krwawi": false, "oglusza_od": 60.0, "skala_tors": Vector3(0.9, 1, 1),
 		"ryk": "trup_jek", "krok": "zbroja", "zasieg_krokow": 9.0,
 		"lup": [["monety", 4], ["suchary", 2], ["klucz", 1], ["bandaz", 1]], "lup_min": 1, "lup_max": 2,
+		"oprawa": [["kosc", 2, 1.0]],
 	},
 	"rycerz": {
 		"model": "res://zasoby/modele/rycerz.glb", "strefy": STREFY_RYCERZ, "szczeliny": SZCZELINY_RYCERZ,
@@ -65,6 +67,7 @@ const TYPY := {
 		"ciezki": true, "wzrok": 0.7, "krwawi": false, "oglusza_od": 999.0, "skala_tors": Vector3(0.84, 1, 0.9),
 		"ryk": "trup_jek", "krok": "zbroja", "zasieg_krokow": 12.0,
 		"lup": [["monety", 4], ["relikwia", 3], ["klucz", 2]], "lup_min": 2, "lup_max": 3,
+		"oprawa": [],
 	},
 }
 
@@ -74,6 +77,7 @@ var swiat: Swiat
 var stan := "czuwa"
 var zyje := true
 var pojemnik: Pojemnik          ## łup na zwłokach, tworzony przy śmierci
+var oprawiony := false
 var strefy: Array[StrefaWroga] = []
 
 var _model: Node3D

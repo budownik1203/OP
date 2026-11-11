@@ -16,7 +16,7 @@ func przygotuj(p: Dictionary) -> void:
 	var rozmiar := Vector3(0.05 * def["w"], 0.035, 0.085 * def["h"])
 	match def["typ"]:
 		"mag":
-			rozmiar = Vector3(0.03, 0.17, 0.065) if def["bron"] == "kwarc" else Vector3(0.025, 0.12, 0.035)
+			rozmiar = Vector3(0.03, 0.17, 0.065) if def["h"] == 2 else Vector3(0.025, 0.12, 0.035)
 		"plecak":
 			var s: Vector2i = def["siatka"]
 			rozmiar = Vector3(0.07 * s.x, 0.09 * s.y, 0.18)

@@ -42,3 +42,74 @@ def srodrecze(s, nadgarstek, knykcie, mat, strona=1):
     # szew przez grzbiet dłoni
     c2 = a.lerp(b, 0.35) + bok * strona * 0.0122
     s.segment(c2 - g * 0.028, c2 + g * 0.028, 0.006, 0.003, 0.006, 0.003, mat["wzm"], gora=tuple(bok))
+
+
+def _przesun(s, o, lustro_x=False, skala=(1.0, 1.0, 1.0)):
+    """Przesuwa (i ewentualnie odbija w X lub skaluje) całą zawartość siatki."""
+    for v in s.bm.verts:
+        x, y, z = v.co.x * skala[0], v.co.y * skala[1], v.co.z * skala[2]
+        if lustro_x:
+            x = -x
+        v.co = Vector((x + o[0], y + o[1], z + o[2]))
+
+
+def prawa_karabin(w_mod, mr, o=(0, 0, 0), lokiec=None):
+    """Prawa dłoń na chwycie pistoletowym karabinka. Wzorzec: „Kwarc”, chwyt
+    z przodu u góry w (0, 0.056, -0.045); o = przesunięcie względem wzorca."""
+    rp = w_mod.Siatka("reka_p", [mr["rekawica"], mr["wzm"], mr["rekaw"]])
+    srodrecze(rp, (0.031, 0.000, -0.108), (0.031, 0.092, -0.084), mr)
+    for i, zz in enumerate((-0.082, -0.103, -0.123)):
+        przes = i * 0.006
+        palec(rp, [(0.030, 0.094 - przes, zz), (-0.006, 0.108 - przes, zz - 0.002), (-0.021, 0.080 - przes, zz - 0.004)], 0.0185, mr["wzm"])
+    palec(rp, [(0.029, 0.094, -0.060), (0.0245, 0.140, -0.052), (0.0225, 0.172, -0.049)], 0.0175, mr["rekawica"])
+    palec(rp, [(0.014, 0.020, -0.056), (-0.019, 0.050, -0.058), (-0.0215, 0.086, -0.060)], 0.021, mr["rekawica"])
+    rp.segment((0.020, 0.004, -0.060), (0.004, 0.040, -0.070), 0.034, 0.040, 0.030, 0.036, mr["rekawica"])
+    lk = lokiec if lokiec is not None else (0.105 - o[0], -0.235 - o[1], -0.215 - o[2])
+    przedramie(rp, (0.034, 0.004, -0.104), lk, mr)
+    _przesun(rp, o)
+    return rp
+
+
+def lewa_loze(w_mod, mr, o=(0, 0, 0), szer=1.0, lokiec=None):
+    """Lewa dłoń pod łożem. Wzorzec: łoże „Kwarca” szerokości 0,047 m, dłoń w y = 0.418.
+    szer skaluje rozstaw dłoni w osi X dla grubszych łóż."""
+    rl = w_mod.Siatka("reka_l", [mr["rekawica"], mr["wzm"], mr["rekaw"]])
+    rl.segment((-0.040, 0.418, -0.050), (0.030, 0.418, -0.047), 0.094, 0.026, 0.090, 0.024, mr["rekawica"], gora=(0, 0, 1))
+    for i in range(4):
+        y = 0.383 + i * 0.0225
+        palec(rl, [(0.027, y, -0.046), (0.0345, y, -0.006), (0.027, y, 0.019)], 0.0185 - (0.002 if i == 3 else 0.0), mr["rekawica"], gora=(0, 1, 0))
+    palec(rl, [(-0.030, 0.392, -0.044), (-0.0345, 0.424, -0.010), (-0.029, 0.452, 0.008)], 0.021, mr["rekawica"], gora=(1, 0, 0))
+    lk = lokiec if lokiec is not None else ((-0.170 - o[0]) / szer, 0.215 - o[1], -0.235 - o[2])
+    przedramie(rl, (-0.046, 0.404, -0.060), lk, mr)
+    _przesun(rl, o, skala=(szer, 1.0, 1.0))
+    return rl
+
+
+def prawa_pistolet(w_mod, mr, o=(0, 0, 0), nazwa="reka_p", lustro=False, lokiec=None):
+    """Dłoń na chwycie pistoletu. Wzorzec: „Jaspis”, tył zamka w y = 0.
+    lustro=True daje lewą dłoń zaciśniętą na chwycie przednim."""
+    rp = w_mod.Siatka(nazwa, [mr["rekawica"], mr["wzm"], mr["rekaw"]])
+    srodrecze(rp, (0.030, -0.066, -0.086), (0.0295, 0.036, -0.062), mr)
+    for i, zz in enumerate((-0.062, -0.083, -0.103)):
+        przes = i * 0.007
+        palec(rp, [(0.029, 0.040 - przes, zz), (-0.004, 0.068 - przes, zz - 0.003), (-0.019, 0.044 - przes, zz - 0.005)], 0.0185, mr["wzm"])
+    palec(rp, [(0.028, 0.040, -0.040), (0.0195, 0.086, -0.031), (0.0165, 0.118, -0.028)], 0.0175, mr["rekawica"])
+    palec(rp, [(0.012, -0.030, -0.030), (-0.0175, 0.006, -0.024), (-0.0185, 0.044, -0.020)], 0.021, mr["rekawica"])
+    rp.segment((0.020, -0.040, -0.040), (0.004, -0.016, -0.052), 0.034, 0.042, 0.030, 0.036, mr["rekawica"])
+    lk = lokiec if lokiec is not None else (0.115, -0.330, -0.150)
+    przedramie(rp, (0.033, -0.062, -0.082), lk, mr)
+    _przesun(rp, o, lustro_x=lustro)
+    return rp
+
+
+def lewa_pistolet(w_mod, mr, o=(0, 0, 0)):
+    """Lewa dłoń podtrzymująca przy chwycie oburącz. Wzorzec: „Jaspis”."""
+    rl = w_mod.Siatka("reka_l", [mr["rekawica"], mr["wzm"], mr["rekaw"]])
+    srodrecze(rl, (-0.031, -0.060, -0.104), (-0.031, 0.040, -0.074), mr, strona=-1)
+    for i, zz in enumerate((-0.060, -0.081, -0.101, -0.119)):
+        przes = i * 0.007
+        palec(rl, [(-0.030, 0.046 - przes, zz), (0.004, 0.086 - przes, zz - 0.003), (0.034, 0.062 - przes, zz - 0.005)], 0.0185 - (0.002 if i == 3 else 0.0), mr["wzm"])
+    palec(rl, [(-0.022, -0.012, -0.040), (-0.0195, 0.040, -0.024), (-0.0185, 0.082, -0.020)], 0.021, mr["rekawica"])
+    przedramie(rl, (-0.034, -0.058, -0.100), (-0.150, -0.310, -0.175), mr)
+    _przesun(rl, o)
+    return rl
