@@ -77,7 +77,8 @@ const DANE := {
 		"nazwa": "BRON_KRZEMIEN", "kaliber": "7.62x51", "rpm": 60.0,
 		"tryby": ["TRYB_POJ"], "masa": 6.0, "dlugosc": 0.92,
 		"odrzut_pion": 2.0, "odrzut_bok": 0.5, "odrzut_tyl": 1.6, "odrzut_kamera": 1.25,
-		"czas_celu": 0.42, "poj": 10, "amunicja": "A_76251_FMJ", "repetowanie": 1.0, "luneta": 0.22,
+		"czas_celu": 0.42, "poj": 10, "amunicja": "A_76251_FMJ", "repetowanie": 1.0, "luneta": 4.0,
+		"okular": Vector3(0, 0.0, 0.058), "obiektyw": Vector3(0, 0.37, 0.058), "r_soczewki": 0.0185,
 		"model": "res://zasoby/modele/krzemien.glb",
 		"biodro": Vector3(0.105, -0.155, -0.24), "biodro_rot": Vector3(0.0, 0.045, -0.06),
 		"t_takt": 3.2, "t_szybkie": 2.4, "rozrzut_moa": 0.8,
@@ -94,8 +95,11 @@ class Sprezyna:
 	var v := Vector3.ZERO
 
 	func krok(dt: float, k: float, c: float) -> void:
-		v += (-k * x - c * v) * dt
-		x += v * dt
+		var n := maxi(1, ceili(dt * 240.0))
+		var h := dt / n
+		for i in n:
+			v += (-k * x - c * v) * h
+			x += v * h
 
 
 var id := ""
@@ -162,6 +166,8 @@ func przygotuj(id_broni: String, wlasciciel: Gracz) -> void:
 	_ustaw_mag(st["mag"])
 	typ_ladowany = d["amunicja"]
 	_zamontuj_dodatki()
+	if d.has("luneta"):
+		_zbuduj_lunete()
 	_zbuduj_blysk()
 	_zbuduj_latarke()
 	visible = false
@@ -189,7 +195,7 @@ func _wczytaj_model() -> void:
 	for s in _model.find_children("*", "MeshInstance3D", true, false):
 		(s as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		(s as MeshInstance3D).extra_cull_margin = 2.0
-		(s as MeshInstance3D).layers = 1 | 2
+		(s as MeshInstance3D).layers = 2          # warstwa 2: broń; kamera lunety jej nie rysuje
 		var siatka := (s as MeshInstance3D).mesh
 		for i in siatka.get_surface_count():
 			var mat := siatka.surface_get_material(i)
@@ -268,6 +274,88 @@ func _zbuduj_latarke() -> void:
 	_latarka.add_child(poswiata)
 
 
+const SHADER_KOLIMATORA := """
+shader_type spatial;
+render_mode unshaded, cull_disabled, depth_draw_never;
+uniform vec3 os = vec3(0.0, 0.0, -1.0);
+uniform float pierscien = 0.0;
+void fragment() {
+	float kat = length(normalize(VERTEX) - normalize(os));
+	float kropka = 1.0 - smoothstep(0.0009, 0.0017, kat);
+	float kolo = pierscien * (1.0 - smoothstep(0.0006, 0.0013, abs(kat - 0.0098)));
+	float kreski = pierscien * step(0.0098, kat) * step(kat, 0.0125) * step(min(abs(normalize(VERTEX).x - normalize(os).x), abs(normalize(VERTEX).y - normalize(os).y)), 0.0007);
+	float znak = max(kropka, max(kolo, kreski));
+	ALBEDO = mix(vec3(0.20, 0.30, 0.27), vec3(1.0, 0.10, 0.05) * 2.6, znak);
+	ALPHA = max(znak, 0.08);
+}
+"""
+const SHADER_LUNETY := """
+shader_type spatial;
+render_mode unshaded;
+uniform sampler2D obraz : source_color, filter_nearest;
+uniform vec2 przes = vec2(0.0);
+uniform float wl = 0.0;
+void fragment() {
+	vec2 p = (UV - 0.5) * 2.0;
+	if (length(p) > 1.0) { discard; }
+	vec3 c = texture(obraz, UV).rgb;
+	float cien = smoothstep(0.72, 0.98, length(p - przes));
+	float cienka = max(step(abs(p.x), 0.005), step(abs(p.y), 0.005));
+	float gruba = max(step(abs(p.x), 0.020) * step(0.42, abs(p.y)), step(abs(p.y), 0.020) * step(0.42, abs(p.x)));
+	float kropki = 0.0;
+	for (int i = 1; i <= 3; i++) {
+		float o = float(i) * 0.105;
+		kropki = max(kropki, 1.0 - step(0.013, min(min(length(p - vec2(o, 0.0)), length(p + vec2(o, 0.0))), min(length(p - vec2(0.0, o)), length(p + vec2(0.0, o))))));
+	}
+	vec3 w = mix(c, vec3(0.0), max(max(cienka, gruba), max(kropki, cien)));
+	ALBEDO = mix(vec3(0.012, 0.025, 0.032), w, wl);
+}
+"""
+
+var _mat_kolimatora: ShaderMaterial
+var _mat_lunety: ShaderMaterial
+var _widok_lunety: SubViewport
+var _kam_lunety: Camera3D
+var _cel_spr := 0.0              ## sprężyna składania się do strzału (lekki przestrzał na końcu)
+var _cel_spr_v := 0.0
+var _ruch_lag := Vector3.ZERO    ## opóźnienie broni za ruchem ciała
+var _seria := 0.0                ## licznik strzałów w serii; opada po przerwie
+var _dryf := 0.0                 ## wędrówka odrzutu na boki w serii
+var oddech := false              ## wstrzymany oddech
+
+
+## Luneta z własnym obrazem: osobna kamera patrzy wzdłuż osi lunety, a jej obraz
+## trafia na soczewkę okularu. Reszta ekranu nie jest przybliżana.
+func _zbuduj_lunete() -> void:
+	_widok_lunety = SubViewport.new()
+	_widok_lunety.size = Vector2i(320, 320)
+	_widok_lunety.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	_widok_lunety.msaa_3d = Viewport.MSAA_DISABLED
+	add_child(_widok_lunety)
+	_kam_lunety = Camera3D.new()
+	_kam_lunety.cull_mask = 0xFFFFF & ~2       # bez warstwy broni
+	_kam_lunety.near = 0.1
+	_kam_lunety.far = 900.0
+	var ok: Vector3 = d["okular"]
+	var r: float = d["r_soczewki"]
+	var oko: float = absf(_poz_cel.z) - ok.y       # odległość oka od okularu
+	_kam_lunety.fov = rad_to_deg(2.0 * atan(r / maxf(oko, 0.02))) / float(d["luneta"])
+	_widok_lunety.add_child(_kam_lunety)
+	var soczewka := MeshInstance3D.new()
+	var qm := QuadMesh.new()
+	qm.size = Vector2(r * 2.0, r * 2.0)
+	soczewka.mesh = qm
+	var sh := Shader.new()
+	sh.code = SHADER_LUNETY
+	_mat_lunety = ShaderMaterial.new()
+	_mat_lunety.shader = sh
+	_mat_lunety.set_shader_parameter("obraz", _widok_lunety.get_texture())
+	soczewka.material_override = _mat_lunety
+	soczewka.position = Vector3(ok.x, ok.z, -ok.y + 0.0048)
+	_ustaw_czesc(soczewka)
+	_model.add_child(soczewka)
+
+
 var tlumik := false
 var kolimator := false
 
@@ -298,8 +386,24 @@ func _zamontuj_dodatki() -> void:
 		var k := Node3D.new()
 		k.position = Vector3(sz.x, sz.z, -sz.y)       # Blender (x, y, z) -> Godot (x, z, -y)
 		_model.add_child(k)
-		for cz in [[Vector3(0.030, 0.012, 0.052), Vector3(0, 0.006, 0)], [Vector3(0.003, 0.030, 0.006), Vector3(-0.0145, 0.027, -0.021)],
-				[Vector3(0.003, 0.030, 0.006), Vector3(0.0145, 0.027, -0.021)], [Vector3(0.032, 0.003, 0.006), Vector3(0, 0.0435, -0.021)]]:
+		var id_cel := Ekwipunek.ma_dodatek(id, "szyna")
+		var holo := id_cel == "holo"
+		var ws := 0.036 if holo else 0.026            # szerokość i wysokość okna
+		var hs := 0.027 if holo else 0.022
+		var cy := 0.012 + hs * 0.5 + 0.002
+		var zo := -0.022 if holo else -0.021
+		var czesci := [
+			[Vector3(ws + 0.004, 0.012, 0.062 if holo else 0.052), Vector3(0, 0.006, 0)],
+			[Vector3(0.003, hs + 0.004, 0.008), Vector3(-(ws + 0.003) * 0.5, cy, zo)],
+			[Vector3(0.003, hs + 0.004, 0.008), Vector3((ws + 0.003) * 0.5, cy, zo)],
+			[Vector3(ws + 0.006, 0.003, 0.008), Vector3(0, cy + hs * 0.5 + 0.0035, zo)],
+			[Vector3(0.006, 0.006, 0.010), Vector3(ws * 0.5 + 0.005, 0.008, 0.012)],      # pokrętło jasności
+		]
+		if holo:
+			# osłona okna: ścianki boczne biegnące do tyłu, jak w celowniku holograficznym
+			czesci.append([Vector3(0.003, hs * 0.55, 0.030), Vector3(-(ws + 0.003) * 0.5, 0.012 + hs * 0.275, zo + 0.019)])
+			czesci.append([Vector3(0.003, hs * 0.55, 0.030), Vector3((ws + 0.003) * 0.5, 0.012 + hs * 0.275, zo + 0.019)])
+		for cz in czesci:
 			var si := MeshInstance3D.new()
 			var bm := BoxMesh.new()
 			bm.size = cz[0]
@@ -308,24 +412,29 @@ func _zamontuj_dodatki() -> void:
 			si.position = cz[1]
 			_ustaw_czesc(si)
 			k.add_child(si)
-		var kropka := MeshInstance3D.new()
+		# szkło ze znakiem celowniczym rzutowanym w nieskończoność: znak trzyma się osi lufy,
+		# a nie szkła, więc przy kołysaniu broni wędruje po oknie jak w prawdziwym kolimatorze
+		var szklo := MeshInstance3D.new()
 		var qm := QuadMesh.new()
-		qm.size = Vector2(0.0022, 0.0022)
-		kropka.mesh = qm
-		kropka.material_override = Mat.swiecacy(Color(1.0, 0.12, 0.08), 3.0)
-		kropka.position = Vector3(0, 0.030, -0.021)
-		kropka.rotation.y = PI
-		_ustaw_czesc(kropka)
-		k.add_child(kropka)
-		(kropka.material_override as StandardMaterial3D).cull_mode = BaseMaterial3D.CULL_DISABLED
-		# oko na wysokości kropki: linia celowania biegnie przez kolimator
-		_poz_cel.y = -(sz.z + 0.030)
+		qm.size = Vector2(ws, hs)
+		szklo.mesh = qm
+		var sh := Shader.new()
+		sh.code = SHADER_KOLIMATORA
+		_mat_kolimatora = ShaderMaterial.new()
+		_mat_kolimatora.shader = sh
+		_mat_kolimatora.set_shader_parameter("pierscien", 1.0 if holo else 0.0)
+		szklo.material_override = _mat_kolimatora
+		szklo.position = Vector3(0, cy, zo)
+		_ustaw_czesc(szklo)
+		k.add_child(szklo)
+		# oko na wysokości środka okna
+		_poz_cel.y = -(sz.z + cy)
 
 
 func _ustaw_czesc(s: MeshInstance3D) -> void:
 	s.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	s.extra_cull_margin = 2.0
-	s.layers = 1 | 2
+	s.layers = 2
 
 
 func _ustaw_mag(p: Dictionary) -> void:
@@ -654,8 +763,12 @@ func _strzal() -> void:
 	var moc := s * postawa * rece * w_celu * Ekwipunek.mod("odrzut") * (0.9 if tlumik else 1.0)
 	_odrz_poz.v.z += 0.95 * d["odrzut_tyl"] * moc
 	_odrz_poz.v.y += 0.12 * d["odrzut_pion"] * moc
-	_odrz_rot.v.x += 1.05 * d["odrzut_pion"] * moc
-	_odrz_rot.v.y += randf_range(-1.0, 1.0) * 0.55 * d["odrzut_bok"] * moc
+	# pierwsze strzały serii kopią najmocniej, potem strzelec „łapie” broń; lufa dryfuje na boki
+	var w_serii := lerpf(1.25, 0.82, clampf(_seria / 5.0, 0.0, 1.0))
+	_seria += 1.0
+	_dryf = _dryf * 0.75 + randf_range(-1.0, 1.0) * 0.55
+	_odrz_rot.v.x += 1.05 * d["odrzut_pion"] * moc * w_serii
+	_odrz_rot.v.y += _dryf * 0.6 * d["odrzut_bok"] * moc
 	_odrz_rot.v.z += randf_range(-1.0, 1.0) * 0.9 * moc
 	gracz.kopniecie(d["odrzut_kamera"] * postawa * rece, randf_range(-0.35, 0.35) * d["odrzut_bok"])
 	# efekty
@@ -685,7 +798,14 @@ func _wyrzuc_luske() -> void:
 
 
 func _poza(dt: float) -> void:
-	var t_cel := smoothstep(0.0, 1.0, cel)
+	# składanie się na sprężynie: szybki dojazd i lekki przestrzał zamiast liniowego przejścia
+	var kroki := maxi(1, ceili(dt * 240.0))        # małe kroki: sprężyna stabilna przy każdej liczbie klatek
+	var h := dt / kroki
+	for i in kroki:
+		_cel_spr_v += ((cel - _cel_spr) * 420.0 - _cel_spr_v * 34.0) * h
+		_cel_spr = clampf(_cel_spr + _cel_spr_v * h, -0.02, 1.025)
+	var t_cel := _cel_spr
+	_seria = maxf(_seria - dt * 9.0, 0.0) if _do_strzalu <= -0.04 else _seria
 	var poz: Vector3 = (d["biodro"] as Vector3).lerp(_poz_cel, t_cel)
 	var rot: Vector3 = (d["biodro_rot"] as Vector3).lerp(Vector3.ZERO, t_cel)
 
@@ -739,6 +859,21 @@ func _poza(dt: float) -> void:
 
 	# oddech i zmęczenie rąk
 	var amp: float = (0.0022 + 0.014 * (1.0 - gracz.wytrz_rece)) * Strojenie.w["S_KOLYSANIE"] * gracz.zdrowie.mnoznik_kolysania()
+	# wstrzymany oddech: broń prawie nieruchoma, ale ręce szybko się męczą
+	oddech = aktywna and gracz.celuje and gracz.sterowanie and Input.is_action_pressed("oddech") and gracz.wytrz_rece > 0.05
+	if oddech:
+		amp *= 0.22
+		gracz.wytrz_rece = maxf(gracz.wytrz_rece - 0.16 * dt, 0.0)
+	# ciało ciągnie broń: przy kroku w bok broń przechyla się i zostaje w tyle, lądowanie ją dobija
+	var v_lok := gracz.global_transform.basis.inverse() * gracz.velocity
+	_ruch_lag = _ruch_lag.lerp(v_lok, 1.0 - exp(-7.0 * dt))
+	var wr := lerpf(1.0, 0.35, clampf(t_cel, 0.0, 1.0))
+	rot.z -= _ruch_lag.x * 0.014 * wr
+	poz.x -= _ruch_lag.x * 0.0035 * wr
+	poz.z += clampf(-_ruch_lag.z, -3.0, 3.0) * 0.0022 * wr
+	var ladowanie: float = gracz.get("_ladowanie")
+	poz.y -= ladowanie * 0.22
+	rot.x -= ladowanie * 0.55
 	if gracz.kuca:
 		amp *= 0.7
 	rot.x += (sin(_czas * 1.13) + sin(_czas * 2.71) * 0.3) * amp
@@ -774,14 +909,21 @@ func _poza(dt: float) -> void:
 		_n_mag.position = _poz_mag
 
 	transform = Transform3D(Basis.from_euler(rot), poz)
+	if _mat_lunety:
+		# cień okularu ucieka, gdy oko schodzi z osi: kołysanie i odrzut przesuwają obraz
+		var odch := rot - (d["biodro_rot"] as Vector3).lerp(Vector3.ZERO, clampf(t_cel, 0.0, 1.0))
+		_mat_lunety.set_shader_parameter("przes", Vector2(-odch.y, odch.x) * 9.0 + Vector2(poz.x - _poz_cel.x, -(poz.y - _poz_cel.y)) * 28.0 * clampf(t_cel, 0.0, 1.0))
+		_mat_lunety.set_shader_parameter("wl", smoothstep(0.55, 0.95, t_cel))
 
 	# lekkie przybliżenie przy celowaniu
 	var bazowe: float = Strojenie.w["S_FOV"]
 	var zoom: float = d["zoom"]
 	if d.has("luneta"):
-		zoom = lerpf(d["zoom"], d["luneta"], smoothstep(0.75, 1.0, cel))
+		zoom = d["zoom"]
 	gracz.kamera.fov = lerpf(bazowe, bazowe * zoom, t_cel)
 	gracz.przyblizenie = gracz.kamera.fov / bazowe
+	if d.has("luneta"):
+		gracz.przyblizenie = lerpf(1.0, 1.6 / float(d["luneta"]), clampf(t_cel, 0.0, 1.0))
 
 
 func _efekty(dt: float) -> void:
@@ -806,5 +948,12 @@ func _efekty(dt: float) -> void:
 		_n_zamek.rotation.z = -1.1 * clampf(rp * 2.0, 0.0, 1.0)
 	_n_zamek.position = _n_zamek.position.lerp(_poz_zamek + Vector3(0, 0, d["skok_zamka"] * cofniecie), 1.0 - exp(-60.0 * dt))
 	# luneta: przy pełnym złożeniu model znika, a widok zastępuje nakładka w interfejsie
-	luneta = smoothstep(0.75, 1.0, cel) if d.has("luneta") and aktywna else 0.0
-	_model.visible = luneta < 0.98
+	if _mat_kolimatora:
+		_mat_kolimatora.set_shader_parameter("os", -transform.basis.z)
+	if _widok_lunety:
+		var patrzy := aktywna and cel > 0.4
+		_widok_lunety.render_target_update_mode = SubViewport.UPDATE_ALWAYS if patrzy else SubViewport.UPDATE_DISABLED
+		if patrzy:
+			var ob: Vector3 = d["obiektyw"]
+			# przystrzelana na 100 m: oś lunety lekko pochylona ku torowi pocisku
+			_kam_lunety.global_transform = _model.global_transform * Transform3D(Basis.from_euler(Vector3(-0.0013, 0, 0)), Vector3(ob.x, ob.z, -ob.y))

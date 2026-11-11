@@ -1,5 +1,30 @@
 # Lista zmian
 
+## Build 6a2 — Optyka i czucie broni (2026-11-11)
+
+Na prośbę właściciela: celowniki jak w Tarkovie zamiast przybliżania całego ekranu.
+
+**Luneta z własnym obrazem**
+- „Krzemień”: osobna kamera patrzy wzdłuż osi lunety, a jej obraz (4×) widać tylko w okularze. Reszta ekranu zostaje bez przybliżenia, broń i ręce są widoczne.
+- Siatka celownicza z kreskami i kropkami, cień okularu uciekający przy kołysaniu i odrzucie.
+- Luneta przystrzelana na 100 m; z bliska pocisk trafia kilka centymetrów poniżej krzyża, jak w prawdziwej broni.
+- Model lunety poprawiony: bębny nastaw, pierścień powiększenia, muszla oczna, osłona obiektywu.
+
+**Kolimator i celownik holograficzny**
+- Znak celowniczy jest rzutowany w nieskończoność: trzyma się osi lufy, a nie szkła. Gdy broń się kołysze, znak wędruje po oknie i dalej pokazuje, gdzie poleci pocisk.
+- Nowy dodatek: celownik holograficzny z pierścieniem i kropką, w większej obudowie. Kolimator ma samą kropkę.
+
+**Czucie broni**
+- Składanie się do strzału na sprężynie: szybki dojazd z lekkim dobiciem.
+- Odrzut w serii: pierwsze strzały kopią najmocniej, potem słabiej, a lufa dryfuje na boki zamiast skakać losowo.
+- Broń reaguje na ruch ciała: przechyla się przy kroku w bok, zostaje w tyle przy ruszaniu, dobija przy lądowaniu.
+- Wstrzymanie oddechu (lewy Alt przy celowaniu): broń prawie nieruchoma, ręce szybko się męczą.
+- Sprężyny liczone małymi krokami, więc broń zachowuje się tak samo przy każdej liczbie klatek.
+
+**Znane braki**
+- Obraz lunety ma 320×320 punktów i stałe powiększenie.
+- Czucia broni nie da się sprawdzić testem; wymaga oceny właściciela i strojenia suwakami (F1).
+
 ## Build 6a — Pluton i dodatki do broni (2026-11-11)
 
 Pierwsza z trzech części wersji 0.1.

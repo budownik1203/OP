@@ -6,7 +6,7 @@ const LUP := [
 	["paczka_556", 3], ["paczka_9", 3], ["bandaz", 3], ["opatrunek", 2], ["przeciwbolowe", 2],
 	["konserwa", 3], ["suchary", 3], ["monety", 4], ["relikwia", 1], ["klucz", 1],
 	["mag_kwarc", 1], ["mag_jaspis", 1], ["paczka_45", 1], ["paczka_12", 2], ["paczka_762x39", 2], ["paczka_762x51", 1],
-	["kolimator", 1], ["tlumik_kar", 1], ["tlumik_9", 1], ["wegiel", 4], ["splonki", 3], ["proch", 2], ["siarka", 1], ["saletra", 1], ["apteczka", 1], ["szyna", 1], ["chlebak", 1],
+	["kolimator", 1], ["holo", 1], ["tlumik_kar", 1], ["tlumik_9", 1], ["wegiel", 4], ["splonki", 3], ["proch", 2], ["siarka", 1], ["saletra", 1], ["apteczka", 1], ["szyna", 1], ["chlebak", 1],
 ]
 
 var pojemnik: Pojemnik

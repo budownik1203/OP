@@ -40,8 +40,8 @@ const TEKSTY := {
 	"PRZYWROC": ["Przywróć domyślne", "Restore defaults"],
 	"POMOC": ["Sterowanie", "Controls"],
 	"POMOC_TRESC": [
-		"WSAD — ruch\nMysz — rozglądanie\nKółko myszy — prędkość chodu\nShift — sprint\nC — kucanie\nSpacja — skok\nQ / E — wychylenie\nLPM — strzał\nPPM — celowanie\nR — przeładowanie taktyczne\nR dwa razy — przeładowanie szybkie (magazynek na ziemię)\nT — sprawdź magazynek\nB — tryb ognia (strzelba: rodzaj ładowanego naboju)\nV — opraw zwłoki nożem\n1 / 2 — karabinek / pistolet\n4–8 — leki: bandaż, opatrunek, szyna, apteczka, przeciwbólowe\nL — latarka\nF — użyj, podnieś, przeszukaj\nTab — ekwipunek\nZ — zrzuć plecak\nG — wyczyść tarcze\nF1 — strojenie\nF2 — język\nH — ta pomoc\nEsc — zwolnij mysz",
-		"WASD — move\nMouse — look\nMouse wheel — walk speed\nShift — sprint\nC — crouch\nSpace — jump\nQ / E — lean\nLMB — fire\nRMB — aim\nR — tactical reload\nR twice — quick reload (magazine dropped)\nT — check magazine\nB — fire mode (shotgun: shell type to load)\nV — butcher a corpse\n1 / 2 — carbine / pistol\n4–8 — meds: bandage, dressing, splint, first aid kit, painkillers\nL — flashlight\nF — use, pick up, search\nTab — inventory\nZ — drop backpack\nG — reset targets\nF1 — tuning\nF2 — language\nH — this help\nEsc — release mouse"],
+		"WSAD — ruch\nMysz — rozglądanie\nKółko myszy — prędkość chodu\nShift — sprint\nC — kucanie\nSpacja — skok\nQ / E — wychylenie\nLPM — strzał\nPPM — celowanie\nLewy Alt — wstrzymaj oddech przy celowaniu\nR — przeładowanie taktyczne\nR dwa razy — przeładowanie szybkie (magazynek na ziemię)\nT — sprawdź magazynek\nB — tryb ognia (strzelba: rodzaj ładowanego naboju)\nV — opraw zwłoki nożem\n1 / 2 — karabinek / pistolet\n4–8 — leki: bandaż, opatrunek, szyna, apteczka, przeciwbólowe\nL — latarka\nF — użyj, podnieś, przeszukaj\nTab — ekwipunek\nZ — zrzuć plecak\nG — wyczyść tarcze\nF1 — strojenie\nF2 — język\nH — ta pomoc\nEsc — zwolnij mysz",
+		"WASD — move\nMouse — look\nMouse wheel — walk speed\nShift — sprint\nC — crouch\nSpace — jump\nQ / E — lean\nLMB — fire\nRMB — aim\nLeft Alt — hold breath while aiming\nR — tactical reload\nR twice — quick reload (magazine dropped)\nT — check magazine\nB — fire mode (shotgun: shell type to load)\nV — butcher a corpse\n1 / 2 — carbine / pistol\n4–8 — meds: bandage, dressing, splint, first aid kit, painkillers\nL — flashlight\nF — use, pick up, search\nTab — inventory\nZ — drop backpack\nG — reset targets\nF1 — tuning\nF2 — language\nH — this help\nEsc — release mouse"],
 	"PODPOWIEDZ_H": ["H — sterowanie", "H — controls"],
 	"TARCZE_WYCZYSZCZONE": ["Tarcze wyczyszczone", "Targets reset"],
 	"MANEKIN": ["Manekin: rycerz", "Dummy: knight"],
@@ -211,6 +211,7 @@ const TEKSTY := {
 	"RURA": ["W rurze", "In the tube"],
 	"BRON_GLOWNA": ["Broń główna", "Primary weapon"],
 	"BRON_BOCZNA": ["Broń boczna", "Sidearm"],
+	"P_HOLO": ["Celownik holograficzny", "Holographic sight"],
 	"P_KOLIMATOR": ["Kolimator", "Red dot sight"],
 	"P_TLUMIK_9": ["Tłumik 9 mm", "9 mm suppressor"],
 	"P_TLUMIK_KAR": ["Tłumik karabinowy", "Rifle suppressor"],

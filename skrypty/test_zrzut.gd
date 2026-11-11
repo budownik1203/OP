@@ -804,7 +804,7 @@ func _zrzuty_dodatkow() -> void:
 	await _klatki(20)
 	E.skrytka.wloz_gdziekolwiek(E.nowy("tlumik_kar"))
 	for p in E.skrytka.rzeczy.duplicate():
-		if p["id"] in ["kolimator", "tlumik_kar"]:
+		if p["id"] in ["holo", "tlumik_kar"]:
 			E.zamontuj("kwarc", p)
 		elif p["id"] == "tlumik_9":
 			E.zamontuj("jaspis", p)

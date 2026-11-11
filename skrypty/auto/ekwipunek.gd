@@ -52,6 +52,7 @@ const PRZEDMIOTY := {
 	"sciegna": {"nazwa": "P_SCIEGNA", "w": 1, "h": 1, "masa": 0.1, "typ": "surowiec", "kolor": "8a5a52", "stos": 6},
 	"gruczol": {"nazwa": "P_GRUCZOL", "w": 1, "h": 1, "masa": 0.15, "typ": "surowiec", "kolor": "5a7a3a", "stos": 4},
 	"kolimator": {"nazwa": "P_KOLIMATOR", "w": 1, "h": 1, "masa": 0.12, "typ": "dodatek", "kolor": "2a2c30", "slot": "szyna", "pasuje": ["kwarc", "granit", "gabro"]},
+	"holo": {"nazwa": "P_HOLO", "w": 1, "h": 1, "masa": 0.30, "typ": "dodatek", "kolor": "2a2c30", "slot": "szyna", "pasuje": ["kwarc", "granit", "gabro"]},
 	"tlumik_9": {"nazwa": "P_TLUMIK_9", "w": 1, "h": 1, "masa": 0.20, "typ": "dodatek", "kolor": "1f2022", "slot": "wylot", "pasuje": ["jaspis", "gabro"]},
 	"tlumik_kar": {"nazwa": "P_TLUMIK_KAR", "w": 1, "h": 2, "masa": 0.45, "typ": "dodatek", "kolor": "1f2022", "slot": "wylot", "pasuje": ["kwarc", "granit"]},
 	"monety": {"nazwa": "P_MONETY", "w": 1, "h": 1, "masa": 0.15, "typ": "lup", "kolor": "8f7a2e"},
@@ -121,6 +122,7 @@ func _zapas_startowy() -> void:
 	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_9", "A_9_HP"))
 	skrytka.wloz_gdziekolwiek(nowy("kilof"))
 	skrytka.wloz_gdziekolwiek(nowy("kolimator"))
+	skrytka.wloz_gdziekolwiek(nowy("holo"))
 	skrytka.wloz_gdziekolwiek(nowy("tlumik_9"))
 	for id in ["konserwa", "konserwa", "suchary", "suchary", "racja"]:
 		skrytka.wloz_gdziekolwiek(nowy(id))
