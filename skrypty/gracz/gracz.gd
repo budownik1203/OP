@@ -85,7 +85,9 @@ func _ready() -> void:
 	Strojenie.zmieniono.connect(func(k): if k == "S_FOV": kamera.fov = Strojenie.w["S_FOV"])
 
 
-func _unhandled_input(ev: InputEvent) -> void:
+## Wejście gracza. Wywoływane z korzenia gry: zdarzenia myszy nie docierają
+## same do węzłów wewnątrz obrazu renderowanego w niskiej rozdzielczości.
+func wejscie(ev: InputEvent) -> void:
 	if not sterowanie or not zdrowie.zyje:
 		return
 	if ev is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:

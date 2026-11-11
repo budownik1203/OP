@@ -97,6 +97,8 @@ func _zastosuj_obraz() -> void:
 
 
 func _unhandled_input(ev: InputEvent) -> void:
+	if swiat != null and not hud.panel_otwarty():
+		swiat.gracz.wejscie(ev)
 	if ev.is_action_pressed("wyjdz"):
 		if hud.zamknij_panele():
 			return

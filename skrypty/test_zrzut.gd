@@ -188,6 +188,19 @@ func _test_gra() -> void:
 	await get_tree().create_timer(1.0).timeout
 	_akcja("przod", false)
 	print("chód: z=", snappedf(g.global_position.z, 0.01), " y=", snappedf(g.global_position.y, 0.01))
+	# prawdziwe zdarzenia myszy: obrót, pochylenie, kółko
+	var obrot0 := g.rotation.y
+	var pochyl0: float = g.get("_pitch")
+	var tempo0 := g.tempo
+	var ruch := InputEventMouseMotion.new()
+	ruch.relative = Vector2(120, 60)
+	Input.parse_input_event(ruch)
+	var kolko := InputEventMouseButton.new()
+	kolko.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	kolko.pressed = true
+	Input.parse_input_event(kolko)
+	await get_tree().create_timer(0.2).timeout
+	print("mysz: obrót ", snappedf(g.rotation.y - obrot0, 0.001), " pochylenie ", snappedf(float(g.get("_pitch")) - pochyl0, 0.001), " tempo ", tempo0, " -> ", g.tempo)
 	await _nacisnij("latarka")
 	await _nacisnij("jezyk")
 	await _nacisnij("pomoc")
