@@ -50,18 +50,21 @@ const TYPY := {
 		"chod": 1.1, "bieg": 4.3, "zasieg": 1.55, "obr": 20.0, "zamach": 0.50, "po_ataku": 0.55,
 		"ciezki": false, "wzrok": 1.0, "krwawi": true, "oglusza_od": 30.0, "skala_tors": Vector3(0.9, 1, 1),
 		"ryk": "ghul_ryk", "krok": "krok", "zasieg_krokow": 5.0,
+		"lup": [["monety", 1], ["klucz", 1]], "lup_min": 0, "lup_max": 1,
 	},
 	"knecht": {
 		"model": "res://zasoby/modele/knecht.glb", "strefy": STREFY_KNECHT, "szczeliny": [],
 		"chod": 0.9, "bieg": 1.9, "zasieg": 1.9, "obr": 30.0, "zamach": 0.70, "po_ataku": 0.8,
 		"ciezki": false, "wzrok": 0.8, "krwawi": false, "oglusza_od": 60.0, "skala_tors": Vector3(0.9, 1, 1),
 		"ryk": "trup_jek", "krok": "zbroja", "zasieg_krokow": 9.0,
+		"lup": [["monety", 4], ["suchary", 2], ["klucz", 1], ["bandaz", 1]], "lup_min": 1, "lup_max": 2,
 	},
 	"rycerz": {
 		"model": "res://zasoby/modele/rycerz.glb", "strefy": STREFY_RYCERZ, "szczeliny": SZCZELINY_RYCERZ,
 		"chod": 0.8, "bieg": 1.55, "zasieg": 2.35, "obr": 52.0, "zamach": 0.90, "po_ataku": 1.0,
 		"ciezki": true, "wzrok": 0.7, "krwawi": false, "oglusza_od": 999.0, "skala_tors": Vector3(0.84, 1, 0.9),
 		"ryk": "trup_jek", "krok": "zbroja", "zasieg_krokow": 12.0,
+		"lup": [["monety", 4], ["relikwia", 3], ["klucz", 2]], "lup_min": 2, "lup_max": 3,
 	},
 }
 
@@ -70,6 +73,7 @@ var d := {}
 var swiat: Swiat
 var stan := "czuwa"
 var zyje := true
+var pojemnik: Pojemnik          ## łup na zwłokach, tworzony przy śmierci
 var strefy: Array[StrefaWroga] = []
 
 var _model: Node3D
@@ -287,6 +291,13 @@ func _umrzyj(kier: Vector3) -> void:
 	zyje = false
 	_ustaw_stan("martwy")
 	velocity = Vector3.ZERO
+	pojemnik = Pojemnik.new(3, 2, "E_ZWLOKI")
+	var los := RandomNumberGenerator.new()
+	los.randomize()
+	var tabela: Array = d["lup"]
+	if not tabela.is_empty():
+		Skrzynia.wypelnij(pojemnik, los, los.randi_range(d["lup_min"], d["lup_max"]), tabela)
+	add_to_group("pojemniki")
 	_kapsula.set_deferred("disabled", true)
 	collision_layer = 0
 	# upadek: na plecy, gdy pocisk leciał od przodu, na twarz w przeciwnym razie

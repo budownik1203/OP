@@ -21,6 +21,7 @@ var _panel_stol: PanelContainer
 var _pomoc_tekst: Label
 var _suwaki := {}
 var _korzen: Control
+var ekwipunek: EkwipunekUI
 var _cialo := {}
 var _stany: Label
 var _leki: Label
@@ -34,7 +35,7 @@ var _smierc_tekst: Label
 func przygotuj(g: Node) -> void:
 	gra = g
 	_korzen = Control.new()
-	_korzen.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_korzen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_korzen.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_korzen)
 	_komunikat = _etykieta(26, Color("e6dcc0"))
@@ -57,6 +58,9 @@ func przygotuj(g: Node) -> void:
 	_et_rece = _etykieta(15, Color("d8c9a0"))
 	_umiesc(_et_rece, Control.PRESET_BOTTOM_LEFT, 30, -70, 60, 20)
 	_zbuduj_zdrowie()
+	ekwipunek = EkwipunekUI.new()
+	ekwipunek.gra = gra
+	_korzen.add_child(ekwipunek)
 	_zbuduj_pomoc()
 	_zbuduj_strojenie()
 	odswiez()
@@ -65,7 +69,7 @@ func przygotuj(g: Node) -> void:
 ## Sylwetka ze strefami ciała, lista ran, leki, pasek użycia, błysk bólu, ekran śmierci.
 func _zbuduj_zdrowie() -> void:
 	_blysk = ColorRect.new()
-	_blysk.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_blysk.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_blysk.color = Color(0.45, 0.0, 0.0, 0.0)
 	_blysk.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_korzen.add_child(_blysk)
@@ -94,13 +98,13 @@ func _zbuduj_zdrowie() -> void:
 	_pasek_uzycia = _pasek(Color("b9b08f"))
 	_umiesc(_pasek_uzycia, Control.PRESET_CENTER, -150, 170, 300, 10)
 	_smierc = ColorRect.new()
-	_smierc.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_smierc.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_smierc.color = Color(0.03, 0.0, 0.0, 0.0)
 	_smierc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_smierc.visible = false
 	_korzen.add_child(_smierc)
 	_smierc_tekst = Label.new()
-	_smierc_tekst.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_smierc_tekst.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_smierc_tekst.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_smierc_tekst.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_smierc_tekst.add_theme_font_size_override("font_size", 44)
@@ -295,7 +299,7 @@ func _fmt(x: float) -> String:
 
 
 func odswiez() -> void:
-	_wskazowka.text = tr("TYTUL") + " · build 2 · " + tr("PODPOWIEDZ_H")
+	_wskazowka.text = tr("TYTUL") + " · build 3 · " + tr("PODPOWIEDZ_H")
 	_et_nogi.text = tr("WYTRZ_NOGI")
 	_et_rece.text = tr("WYTRZ_RECE")
 	(_panel_pomoc.find_child("naglowek", true, false) as Label).text = tr("POMOC")
@@ -313,7 +317,7 @@ func komunikat(tekst: String) -> void:
 
 
 func panel_otwarty() -> bool:
-	return _panel_stroj.visible or _panel_pomoc.visible or (_panel_stol != null and _panel_stol.visible)
+	return _panel_stroj.visible or _panel_pomoc.visible or ekwipunek.visible or (_panel_stol != null and _panel_stol.visible)
 
 
 func zamknij_panele() -> bool:
@@ -323,6 +327,8 @@ func zamknij_panele() -> bool:
 		Strojenie.zapisz()
 	_panel_stroj.visible = false
 	_panel_pomoc.visible = false
+	if ekwipunek.visible:
+		ekwipunek.zamknij()
 	if _panel_stol:
 		_panel_stol.visible = false
 	_wroc_do_gry()
@@ -346,6 +352,21 @@ func przelacz_strojenie() -> void:
 		zamknij_panele()
 	else:
 		_otworz(_panel_stroj)
+
+
+func przelacz_ekwipunek() -> void:
+	if ekwipunek.visible:
+		zamknij_panele()
+	else:
+		otworz_ekwipunek(null)
+
+
+func otworz_ekwipunek(pojemnik: Pojemnik) -> void:
+	zamknij_panele()
+	ekwipunek.otworz(pojemnik)
+	gra.swiat.gracz.sterowanie = false
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	Dzwiek.przy_uchu("bron_wyjmij", -10.0)
 
 
 func przelacz_pomoc() -> void:
@@ -423,8 +444,11 @@ func _process(dt: float) -> void:
 	_tempo.modulate.a = clampf(_tempo_t / 0.4, 0.0, 1.0)
 	var tekst := ""
 	if not panel_otwarty():
-		if gra.swiat.magazynek_w_zasiegu() != null:
-			tekst = "[F] " + tr("MAG_PODNIESIONY").to_lower()
+		var lezy: Node3D = gra.swiat.magazynek_w_zasiegu()
+		if lezy != null:
+			tekst = tr("E_PODNIES") + ": " + tr(Ekwipunek.PRZEDMIOTY[lezy.get("przedmiot")["id"]]["nazwa"])
+		elif gra.swiat.pojemnik_w_zasiegu() != null:
+			tekst = tr("E_PRZESZUKAJ")
 		elif gra.swiat.podpowiedz() != "":
 			tekst = gra.swiat.podpowiedz()
 		elif gra.swiat.bron().zablokowana > 0.35:

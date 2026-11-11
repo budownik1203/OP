@@ -6,8 +6,8 @@ Kolejność od fundamentu w górę. Wersja 0.1 to build 6: pierwsza pełna pętl
 | --- | --- | --- | --- |
 | 1 | Strzelnica | Ruch, karabinek i pistolet, balistyka, odrzut, celowanie, tarcze klas 0–5, panel strojenia | gotowy |
 | 2 | Pierwszy loch | Ręczny poziom kopalni, ghul, umarły knecht, upadły rycerz, ciemność, latarka, hałas, zdrowie strefowe, rany i rozczłonkowanie, leki | gotowy |
-| 3 | Ekwipunek | Siatka, plecaki, kamizelki, magazynki jako przedmioty, waga, skrzynie, przeszukiwanie | następny |
-| 4 | Ekstrakcja | Wyjścia, śmierć z utratą sprzętu, skrytka, baza jako menu, Przebudzenie lochu, głód i pragnienie, biwak | |
+| 3 | Ekwipunek | Siatka, plecaki, kamizelki, magazynki jako przedmioty, waga, skrzynie, przeszukiwanie | gotowy |
+| 4 | Ekstrakcja | Wyjścia, śmierć z utratą sprzętu, skrytka, baza jako menu, Przebudzenie lochu, głód i pragnienie, biwak | następny |
 | 5 | Ruda i naboje | Kopanie, oprawianie, piec, stół rusznikarski, składanie naboi, pozostała broń i kalibry | |
 | 6 | Wersja 0.1 | Losowe składanie lochu z modułów, warg, kultysta, Straż Zakonu, troll, boss, dodatki do broni, pluton i zadania w bazie | |
 | 7 | Krypty i runy | Druga lokacja, zjawy, sól, srebro, ołtarz runiczny, Skażenie | |
@@ -19,5 +19,6 @@ Kolejność od fundamentu w górę. Wersja 0.1 to build 6: pierwsza pełna pętl
 
 - Build 1: czy samo strzelanie do tarcz sprawia frajdę (odrzut, kołysanie, bezwładność — panel F1).
 - Build 2: czy walka z rycerzem pistoletem i karabinkiem to dwa różne doświadczenia; czy wrogowie są czytelni i uczciwi (zamach widać, kroki słychać).
+- Build 3: czy pakowanie się i przeszukiwanie jest wygodne (przeciąganie, obrót, Ctrl+klik); czy kafelki bez ikon wystarczą na ten etap.
 - Modele wrogów i ich animacje: poziom akceptowalny czy do przerobienia.
 - Dźwięki są syntezą zastępczą; wystrzały i głosy potworów trzeba będzie zastąpić nagraniami.

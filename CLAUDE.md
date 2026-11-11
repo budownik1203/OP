@@ -15,6 +15,7 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
 - Styl: hybryda fasetowa w dwóch gęstościach (świat i potwory 800–2500 trójkątów, broń i ręce 4–8 tys.), małe tekstury bez wygładzania, obraz ok. 540 linii, bez drgania wierzchołków.
 - Silnik Godot 4.7, modele skryptami w Blenderze. Repozytorium jest źródłem prawdy.
 - Właściciel wymaga jakości docelowej, zwłaszcza modeli i animacji: realistyczne proporcje, żadnej karykatury. Każdy model sprawdzać na renderach przed wejściem do gry.
+- Po każdym buildzie właściciel dostaje paczkę ZIP z projektem do pobrania (`git archive --format=zip --prefix=OstatniPluton-buildN/ HEAD`), wysłaną w rozmowie.
 - Praca bez czekania na właściciela: buildy po kolei aż do wersji 0.1 (build 6), po każdym commit i wpis w `docs/ZMIANY.md`.
 
 ## Układ repozytorium
@@ -22,7 +23,9 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
 - `skrypty/` — GDScript. Sceny buduje się w kodzie; pliki `.tscn` zawierają tylko korzeń ze skryptem.
 - `skrypty/swiat.gd` — baza każdej lokacji (gracz, ślady, krew, hałas); `strzelnica/`, `kopalnia.gd` to lokacje; `wrogowie/` — wrogowie i strefy trafień; `gracz/zdrowie.gd` — rany i leki.
 - `narzedzia/blender/postacie.py` — wspólny szkielet człowieka i warianty wrogów.
-- `skrypty/auto/` — autoloady: `Jezyk`, `Wejscie`, `Strojenie`, `Amunicja`, `Dzwiek`.
+- `skrypty/auto/` — autoloady: `Jezyk`, `Wejscie`, `Strojenie`, `Amunicja`, `Dzwiek`, `Ekwipunek` (stan żołnierza między lokacjami).
+- `skrypty/ekwipunek/` — siatka (`Pojemnik`), przedmioty leżące, skrzynie; `skrypty/ui/ekwipunek_ui.gd` — ekran ekwipunku.
+- Uwaga: świat 3D jest w SubViewport i nie dostaje zdarzeń myszy. Wejście gracza przekazuje `gra.gd` (`Gracz.wejscie`). Kontrolki pełnoekranowe ustawiać przez `set_anchors_and_offsets_preset`.
 - `narzedzia/blender/` — skrypty modeli (`python3 kwarc.py` generuje `zasoby/modele/kwarc.glb` i tekstury).
 - `narzedzia/dzwiek/generuj.py` — synteza dźwięków zastępczych.
 - `narzedzia/zrzuty.sh`, `narzedzia/podglad.sh` — zrzuty z gry i rzuty modeli do kontroli jakości.
@@ -41,5 +44,6 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
 1. `godot --headless --import` bez błędów.
 2. `godot --headless -- --test-balistyka` — tabela wyników zgodna z projektem.
 3. `xvfb-run godot --rendering-driver opengl3 -- --test-gra` — przejście wszystkich czynności gracza bez błędów.
+   `xvfb-run godot --rendering-driver opengl3 -- --test-ekwipunek` — siatka, waga, przeciąganie myszą, łup, śmierć.
    `godot --headless -- --swiat=kopalnia --test-loch` — wrogowie, strefy, rozczłonkowanie, ciosy, leki, śmierć.
 4. `narzedzia/zrzuty.sh` i obejrzenie zrzutów; nowe modele dodatkowo przez `narzedzia/podglad.sh`.

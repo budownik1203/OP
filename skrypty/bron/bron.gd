@@ -46,8 +46,12 @@ var d := {}
 var gracz: Gracz
 var aktywna := false
 var komora := ""                 ## typ naboju w komorze albo ""
-var mag: Variant = null          ## Array nabojów w broni albo null
-var magi: Array = []             ## zapasowe magazynki
+var mag: Variant = null          ## Array nabojów magazynka w broni albo null
+var mag_p := {}                  ## przedmiot magazynka w broni ({} = brak)
+## zapasowe magazynki dostępne od ręki (kamizelka i kieszenie), jako listy nabojów
+var magi: Array:
+	get:
+		return Ekwipunek.magazynki(id).map(func(p): return p["dane"]["naboje"])
 var tryb := 0
 var cel := 0.0                   ## 0 biodro .. 1 przyrządy
 var zablokowana := 0.0
@@ -74,7 +78,8 @@ var _stan := ""
 var _t := 0.0
 var _t_max := 1.0
 var _zdarzenia := {}
-var _nowy_mag: Variant = null
+var _nowy_mag := {}
+var _miejsce := {}
 var _zamek_t := 0.0
 var _blysk: MeshInstance3D
 var _blysk_swiatlo: OmniLight3D
@@ -90,7 +95,9 @@ func przygotuj(id_broni: String, wlasciciel: Gracz) -> void:
 	d = DANE[id]
 	gracz = wlasciciel
 	_wczytaj_model()
-	zaladuj_magazynki(d["amunicja"], "")
+	var st: Dictionary = Ekwipunek.stan_broni[id]
+	komora = st["komora"]
+	_ustaw_mag(st["mag"])
 	_zbuduj_blysk()
 	_zbuduj_latarke()
 	visible = false
@@ -195,25 +202,31 @@ func _zbuduj_latarke() -> void:
 	_latarka.add_child(poswiata)
 
 
-## Ładuje wszystkie magazynki od nowa. typ_b: opcjonalny drugi typ w przeplocie 2:1.
-func zaladuj_magazynki(typ_a: String, typ_b: String) -> void:
-	magi.clear()
-	for i in d["ile_mag"]:
-		magi.append(_nowy_magazynek(typ_a, typ_b))
-	mag = magi.pop_back()
-	komora = mag.pop_back()
+func _ustaw_mag(p: Dictionary) -> void:
+	mag_p = p
+	mag = null if p.is_empty() else p["dane"]["naboje"]
 	if _n_mag:
-		_n_mag.visible = true
+		_n_mag.visible = mag != null
 
 
-func _nowy_magazynek(typ_a: String, typ_b: String) -> Array:
-	var m := []
-	for i in d["poj"]:
-		if typ_b != "" and i % 3 == 2:
-			m.append(typ_b)
-		else:
-			m.append(typ_a)
-	return m
+## Zapisuje stan broni do ekwipunku (przed zmianą lokacji).
+func zapisz_stan() -> void:
+	Ekwipunek.stan_broni[id] = {"mag": mag_p, "komora": komora}
+
+
+## Stół amunicyjny: napełnia wszystkie magazynki tej broni. typ_b: przeplot 2:1.
+func zaladuj_magazynki(typ_a: String, typ_b: String) -> void:
+	var lista := Ekwipunek.wszystkie_magazynki(id)
+	if not mag_p.is_empty():
+		lista.append(mag_p)
+	for p in lista:
+		var naboje: Array = p["dane"]["naboje"]
+		naboje.clear()
+		for i in d["poj"]:
+			naboje.append(typ_b if typ_b != "" and i % 3 == 2 else typ_a)
+	if mag != null and komora == "":
+		komora = mag.pop_back()
+	Ekwipunek.zmiana.emit()
 
 
 func wyjmij() -> void:
@@ -233,6 +246,12 @@ func wlacz_latarke(stan: bool) -> void:
 
 func schowaj() -> void:
 	aktywna = false
+	if not _nowy_mag.is_empty():
+		if mag == null:
+			_ustaw_mag(_nowy_mag)
+		else:
+			Ekwipunek.podnies(_nowy_mag)
+		_nowy_mag = {}
 	_stan = ""
 	cel = 0.0
 	gracz.celuje = false
@@ -319,20 +338,23 @@ func _zacznij(stan: String, czas: float, zdarzenia: Dictionary) -> void:
 
 
 func _zacznij_przeladowanie(szybkie: bool) -> void:
-	if magi.is_empty():
+	var zapas := Ekwipunek.magazynki(id)
+	if zapas.is_empty():
 		_stan = ""
 		komunikat.emit(tr("BRAK_MAG"))
 		return
-	var najlepszy := 0
-	for i in magi.size():
-		if magi[i].size() > magi[najlepszy].size():
-			najlepszy = i
-	if magi[najlepszy].is_empty() and (mag == null or not mag.is_empty()):
+	var najlepszy: Dictionary = zapas[0]
+	for p in zapas:
+		if p["dane"]["naboje"].size() > najlepszy["dane"]["naboje"].size():
+			najlepszy = p
+	if najlepszy["dane"]["naboje"].is_empty() and (mag == null or not mag.is_empty()):
 		_stan = ""
 		komunikat.emit(tr("BRAK_MAG"))
 		return
-	_nowy_mag = magi[najlepszy]
-	magi.remove_at(najlepszy)
+	# zapamiętaj miejsce w kamizelce: stary magazynek wróci tam, skąd wyjęto nowy
+	_nowy_mag = najlepszy
+	_miejsce = {"poj": Ekwipunek.pojemnik_przedmiotu(najlepszy), "x": najlepszy["x"], "y": najlepszy["y"], "obr": najlepszy["obr"]}
+	Ekwipunek.wyjmij(najlepszy)
 	var zd := {0.24: "mag_wyj_s" if szybkie else "mag_wyj", 0.66: "mag_wl", 0.86: "zamek"}
 	_zacznij("przelad", d["t_szybkie"] if szybkie else d["t_takt"], zd)
 
@@ -361,18 +383,18 @@ func _zdarzenie(z: String) -> void:
 		"mag_wyj", "mag_wyj_s":
 			Dzwiek.przy_uchu("mag_wyj", -3.0)
 			if mag != null:
+				var stary := mag_p
 				if z == "mag_wyj_s":
-					_upusc_magazynek(mag)
+					_upusc_magazynek(stary)
 					komunikat.emit(tr("MAG_UPUSZCZONY"))
-				else:
-					magi.append(mag)
-			mag = null
-			_n_mag.visible = false
+				elif not Ekwipunek.wloz_do_szybkich(stary, _miejsce.get("poj"), _miejsce.get("x", 0), _miejsce.get("y", 0), _miejsce.get("obr", false)):
+					_upusc_magazynek(stary)
+					komunikat.emit(tr("E_BRAK_MIEJSCA"))
+			_ustaw_mag({})
 		"mag_wl":
 			Dzwiek.przy_uchu("mag_wl", -2.0)
-			mag = _nowy_mag
-			_nowy_mag = null
-			_n_mag.visible = true
+			_ustaw_mag(_nowy_mag)
+			_nowy_mag = {}
 		"zamek":
 			if komora == "" and mag != null and not mag.is_empty():
 				komora = mag.pop_back()
@@ -403,20 +425,12 @@ func _opis_magazynka() -> String:
 	return tekst + " · " + tr("KOMORA_NABOJ" if komora != "" else "KOMORA_PUSTA")
 
 
-func _upusc_magazynek(naboje: Array) -> void:
+func _upusc_magazynek(p: Dictionary) -> void:
 	var swiat := get_tree().get_first_node_in_group("swiat")
 	if swiat == null:
-		magi.append(naboje)
+		Ekwipunek.podnies(p)
 		return
-	var rb := RigidBody3D.new()
-	rb.set_script(load("res://skrypty/bron/upuszczony_magazynek.gd"))
-	rb.set("naboje", naboje)
-	rb.set("id_broni", id)
-	rb.set("rozmiar", Vector3(0.03, 0.17, 0.065) if id == "kwarc" else Vector3(0.025, 0.12, 0.035))
-	swiat.add_child(rb)
-	rb.global_position = _n_mag.global_position + Vector3.DOWN * 0.1
-	rb.linear_velocity = gracz.velocity + Vector3.DOWN * 1.0
-	rb.angular_velocity = Vector3(randf_range(-3, 3), randf_range(-3, 3), randf_range(-3, 3))
+	swiat.upusc(p, _n_mag.global_position + Vector3.DOWN * 0.1, gracz.velocity + Vector3.DOWN)
 
 
 func _strzal() -> void:
@@ -572,9 +586,3 @@ func _efekty(dt: float) -> void:
 	elif d["zamek_zostaje"] and komora == "":
 		cofniecie = 0.9
 	_n_zamek.position = _n_zamek.position.lerp(_poz_zamek + Vector3(0, 0, d["skok_zamka"] * cofniecie), 1.0 - exp(-60.0 * dt))
-
-
-## Zwraca magazynek do puli (podniesiony z ziemi).
-func oddaj_magazynek(naboje: Array) -> void:
-	magi.append(naboje)
-	komunikat.emit(tr("MAG_PODNIESIONY"))

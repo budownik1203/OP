@@ -6,6 +6,7 @@ extends Swiat
 
 const POLE := 3.0
 const WYS := 3.1
+const SKRZYNIE := [Vector2i(20, 1), Vector2i(9, 3), Vector2i(1, 7), Vector2i(11, 9), Vector2i(1, 11)]
 const MAPA := [
 	"######################",
 	"#S...#.......#g....#.#",
@@ -108,6 +109,22 @@ func _poziom() -> void:
 				"g", "k", "r":
 					if not bez_wrogow:
 						_wrog({"g": "ghul", "k": "knecht", "r": "rycerz"}[znak], p, los.randf() * TAU)
+	_skrzynie(los)
+
+
+func _skrzynie(los: RandomNumberGenerator) -> void:
+	for c in SKRZYNIE:
+		var p := _srodek(c.x, c.y)
+		var bok := Vector3.ZERO
+		for k in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			if _znak(c.x + k.x, c.y + k.y) == "#":
+				bok = Vector3(k.x, 0, k.y)
+				break
+		var s := Skrzynia.new()
+		s.position = p + bok * 0.95
+		s.rotation.y = atan2(-bok.x, -bok.z) + PI
+		add_child(s)
+		s.przygotuj(los)
 
 
 func _znak(cx: int, cz: int) -> String:

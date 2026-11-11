@@ -16,6 +16,10 @@ func _ready() -> void:
 		set_process(false)
 		_test_balistyka.call_deferred()
 		return
+	if "--test-ekwipunek" in OS.get_cmdline_user_args():
+		set_process(false)
+		_test_ekwipunek.call_deferred()
+		return
 	if "--test-loch" in OS.get_cmdline_user_args():
 		set_process(false)
 		_test_loch.call_deferred()
@@ -188,6 +192,19 @@ func _test_gra() -> void:
 	await get_tree().create_timer(1.0).timeout
 	_akcja("przod", false)
 	print("chód: z=", snappedf(g.global_position.z, 0.01), " y=", snappedf(g.global_position.y, 0.01))
+	# prawdziwe zdarzenia myszy: obrót, pochylenie, kółko
+	var obrot0 := g.rotation.y
+	var pochyl0: float = g.get("_pitch")
+	var tempo0 := g.tempo
+	var ruch := InputEventMouseMotion.new()
+	ruch.relative = Vector2(120, 60)
+	Input.parse_input_event(ruch)
+	var kolko := InputEventMouseButton.new()
+	kolko.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	kolko.pressed = true
+	Input.parse_input_event(kolko)
+	await get_tree().create_timer(0.2).timeout
+	print("mysz: obrót ", snappedf(g.rotation.y - obrot0, 0.001), " pochylenie ", snappedf(float(g.get("_pitch")) - pochyl0, 0.001), " tempo ", tempo0, " -> ", g.tempo)
 	await _nacisnij("latarka")
 	await _nacisnij("jezyk")
 	await _nacisnij("pomoc")
@@ -322,6 +339,19 @@ func _test_loch() -> void:
 	get_tree().quit()
 
 
+func _klik(pozycja: Vector2, wcisniety: bool) -> void:
+	var ruch := InputEventMouseMotion.new()
+	ruch.position = pozycja
+	ruch.global_position = pozycja
+	Input.parse_input_event(ruch)
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = wcisniety
+	ev.position = pozycja
+	ev.global_position = pozycja
+	Input.parse_input_event(ev)
+
+
 func _klatki(n: int) -> void:
 	for i in n:
 		await get_tree().process_frame
@@ -397,4 +427,104 @@ func _zrzuty_loch() -> void:
 	g.set("_pitch", 0.0)
 	await _klatki(10)
 	await _zapisz("30_rany")
+	gra.hud.otworz_ekwipunek(gh.pojemnik if gh.pojemnik != null else Pojemnik.new(3, 2, "E_ZWLOKI"))
+	var skrz: Skrzynia = get_tree().get_nodes_in_group("pojemniki")[0]
+	gra.hud.otworz_ekwipunek(skrz.pojemnik)
+	await _klatki(8)
+	await _zapisz("31_ekwipunek_szukanie")
+	for p in skrz.pojemnik.rzeczy:
+		p["odkryty"] = true
+	await _klatki(6)
+	await _zapisz("32_ekwipunek")
+	get_tree().quit()
+
+
+## Siatka, waga, ładowanie magazynka, plecak, łup, przenoszenie między lokacjami, śmierć.
+func _test_ekwipunek() -> void:
+	var gra := get_parent()
+	var E := Ekwipunek
+	await get_tree().create_timer(0.3).timeout
+	print("masa startowa: ", snappedf(E.masa(), 0.01), " kg; mnożnik ruchu ", E.mnoznik_ruchu())
+	print("kamizelka: ", E.kamizelka.rzeczy.size(), " rzeczy; plecak: ", E.plecak.rzeczy.size(), "; kieszenie: ", E.kieszenie.rzeczy.size())
+	# obrót i kolizje w siatce
+	var szyna := E.nowy("szyna")
+	var poj := Pojemnik.new(2, 2)
+	print("szyna 1×2 w siatce 2×2: pion ", poj.wloz(szyna, 0, 0, false), ", druga obok ", poj.wloz(E.nowy("szyna"), 1, 0, false), ", trzecia ", poj.wloz_gdziekolwiek(E.nowy("szyna")))
+	var poj2 := Pojemnik.new(2, 1)
+	print("szyna w siatce 2×1 tylko po obrocie: ", poj2.wloz(E.nowy("szyna"), 0, 0, false), " / ", poj2.wloz_gdziekolwiek(E.nowy("szyna")))
+	# ładowanie magazynka z paczki
+	var mag: Dictionary = E.magazynki("kwarc")[0]
+	mag["dane"]["naboje"].resize(20)
+	var paczka := {}
+	for p in E.plecak.rzeczy:
+		if p["id"] == "paczka_556" and p["dane"]["typ"] == "A_556_SS":
+			paczka = p
+	print("start ładowania: ", E.zacznij_ladowanie(mag, paczka))
+	await get_tree().create_timer(2.0).timeout
+	print("po 2 s: w magazynku ", mag["dane"]["naboje"].size(), ", w paczce ", paczka["dane"]["ile"], ", na wierzchu ", mag["dane"]["naboje"][-1])
+	E.przerwij_ladowanie()
+	# przeciąganie myszą: bandaż z kieszeni do plecaka, z obrotem szyny
+	gra.hud.otworz_ekwipunek(null)
+	await get_tree().create_timer(0.3).timeout
+	var ui: EkwipunekUI = gra.hud.ekwipunek
+	var y_plecak := 150.0 + 58.0 * 2 + 64 + E.kamizelka.wys * 58.0 + 64
+	var bandaze_k := 0
+	for p in E.kieszenie.rzeczy:
+		if p["id"] == "bandaz":
+			bandaze_k += 1
+	_klik(Vector2(430 + 20, 150 + 20), true)
+	await get_tree().create_timer(0.15).timeout
+	_klik(Vector2(430 + 3 * 58 + 20, y_plecak + 4 * 58 + 20), false)
+	await get_tree().create_timer(0.15).timeout
+	var bandaze_k2 := 0
+	for p in E.kieszenie.rzeczy:
+		if p["id"] == "bandaz":
+			bandaze_k2 += 1
+	var w_plecaku := not E.plecak.na_polu(3, 4).is_empty()
+	print("przeciągnięcie: rozmiar ekranu ekwipunku ", ui.size, ", bandaże w kieszeniach ", bandaze_k, " -> ", bandaze_k2, ", w plecaku na (3,4): ", w_plecaku)
+	gra.hud.zamknij_panele()
+	# przeciążenie
+	for i in 14:
+		E.plecak.wloz_gdziekolwiek(E.nowy("konserwa"))
+	for i in 3:
+		E.plecak.wloz_gdziekolwiek(E.nowy("relikwia"))
+	print("po dopakowaniu: ", snappedf(E.masa(), 0.01), " kg; mnożnik ruchu ", snappedf(E.mnoznik_ruchu(), 0.01), "; hałas ×", snappedf(E.mnoznik_halasu(), 0.01))
+	# zrzucenie i podniesienie plecaka
+	var przed := E.masa()
+	gra.swiat.zrzuc_plecak()
+	await get_tree().create_timer(1.2).timeout
+	print("plecak zrzucony: ", snappedf(przed, 0.1), " -> ", snappedf(E.masa(), 0.1), " kg; leży: ", get_tree().get_nodes_in_group("do_podniesienia").size())
+	var lezy: Node3D = gra.swiat.magazynek_w_zasiegu()
+	if lezy != null and E.podnies(lezy.get("przedmiot")):
+		lezy.queue_free()
+	await get_tree().create_timer(0.2).timeout
+	print("plecak podniesiony: ", snappedf(E.masa(), 0.1), " kg; rzeczy w plecaku: ", E.plecak.rzeczy.size())
+	# przeniesienie stanu broni do kopalni
+	var b: Bron = gra.swiat.bron()
+	b.call("_strzal")
+	b.call("_strzal")
+	var w_mag: int = b.mag.size()
+	E.relikwiarz.wloz_gdziekolwiek(E.nowy("monety"))
+	gra.zmien_swiat("kopalnia")
+	await get_tree().create_timer(1.0).timeout
+	print("w kopalni: mag ", gra.swiat.bron().mag.size(), " (było ", w_mag, "), masa ", snappedf(E.masa(), 0.1))
+	# skrzynia: przeszukiwanie odkrywa po jednym przedmiocie
+	var skrzynia: Skrzynia = get_tree().get_nodes_in_group("pojemniki")[0]
+	var ukryte := 0
+	for p in skrzynia.pojemnik.rzeczy:
+		if not p["odkryty"]:
+			ukryte += 1
+	gra.hud.otworz_ekwipunek(skrzynia.pojemnik)
+	await get_tree().create_timer(1.6).timeout
+	var ukryte2 := 0
+	for p in skrzynia.pojemnik.rzeczy:
+		if not p["odkryty"]:
+			ukryte2 += 1
+	print("skrzynia: ", skrzynia.pojemnik.rzeczy.size(), " rzeczy, ukryte ", ukryte, " -> ", ukryte2, " po 1,6 s")
+	gra.hud.zamknij_panele()
+	# śmierć: zostaje relikwiarz
+	gra.swiat.gracz.zdrowie.cios(999.0)
+	await get_tree().create_timer(6.0).timeout
+	print("po śmierci: świat ", gra.nazwa_swiata, ", masa ", snappedf(E.masa(), 0.1), " kg, relikwiarz: ", E.relikwiarz.rzeczy.size(), ", plecak: ", E.plecak.rzeczy.size(), ", mag w broni: ", gra.swiat.bron().mag.size())
+	print("TEST EKWIPUNKU ZAKOŃCZONY")
 	get_tree().quit()

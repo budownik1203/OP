@@ -170,6 +170,36 @@ func sciezka(od: Vector3, do: Vector3) -> PackedVector3Array:
 	return PackedVector3Array([do])
 
 
+## Kładzie przedmiot w świecie (rzucony magazynek, zrzucony plecak).
+func upusc(p: Dictionary, pozycja: Vector3, predkosc := Vector3.ZERO) -> void:
+	var rb := LezacyPrzedmiot.new()
+	add_child(rb)
+	rb.przygotuj(p)
+	rb.global_position = pozycja
+	rb.linear_velocity = predkosc
+	rb.angular_velocity = Vector3(randf_range(-3, 3), randf_range(-3, 3), randf_range(-3, 3))
+
+
+func zrzuc_plecak() -> void:
+	if Ekwipunek.plecak_p.is_empty():
+		return
+	var p := Ekwipunek.zdejmij_plecak()
+	upusc(p, gracz.global_position + Vector3.UP * 1.1 + gracz.global_transform.basis.z * 0.35, gracz.velocity * 0.5)
+	Dzwiek.przy_uchu("bron_wyjmij", -4.0)
+
+
+## Najbliższa skrzynia albo zwłoki w zasięgu ręki: obiekt z polem `pojemnik`.
+func pojemnik_w_zasiegu() -> Node3D:
+	var najlepszy: Node3D = null
+	var odl := 2.1
+	for m in get_tree().get_nodes_in_group("pojemniki"):
+		var dd: float = (m as Node3D).global_position.distance_to(gracz.global_position)
+		if dd < odl:
+			odl = dd
+			najlepszy = m
+	return najlepszy
+
+
 func magazynek_w_zasiegu() -> Node3D:
 	var najlepszy: Node3D = null
 	var odl := 2.0

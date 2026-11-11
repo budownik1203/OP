@@ -27,7 +27,7 @@ var _mat_obrazu: ShaderMaterial
 
 func _ready() -> void:
 	kontener = SubViewportContainer.new()
-	kontener.set_anchors_preset(Control.PRESET_FULL_RECT)
+	kontener.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	kontener.stretch = true
 	kontener.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	kontener.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -67,6 +67,8 @@ func zmien_swiat(nazwa: String) -> void:
 func _zaladuj_swiat(nazwa: String) -> void:
 	if swiat != null:
 		hud.zamknij_panele()
+		for b in swiat.bronie:
+			b.zapisz_stan()
 		widok.remove_child(swiat)
 		swiat.free()
 	nazwa_swiata = nazwa
@@ -84,9 +86,13 @@ func _zaladuj_swiat(nazwa: String) -> void:
 
 
 func _smierc() -> void:
+	hud.zamknij_panele()
 	hud.pokaz_smierc()
 	await get_tree().create_timer(5.0).timeout
 	hud.ukryj_smierc()
+	# poległy traci wszystko poza relikwiarzem; baza wydaje minimalny przydział
+	swiat.bronie.clear()
+	Ekwipunek.po_smierci()
 	zmien_swiat("strzelnica")
 
 
@@ -97,6 +103,8 @@ func _zastosuj_obraz() -> void:
 
 
 func _unhandled_input(ev: InputEvent) -> void:
+	if swiat != null and not hud.panel_otwarty():
+		swiat.gracz.wejscie(ev)
 	if ev.is_action_pressed("wyjdz"):
 		if hud.zamknij_panele():
 			return
@@ -110,6 +118,8 @@ func _unhandled_input(ev: InputEvent) -> void:
 		Jezyk.przelacz()
 	elif ev.is_action_pressed("pomoc"):
 		hud.przelacz_pomoc()
+	elif ev.is_action_pressed("ekwipunek") and hud.ekwipunek.visible:
+		hud.zamknij_panele()
 	elif hud.panel_otwarty():
 		return
 	elif ev.is_action_pressed("bron_1"):
@@ -119,13 +129,24 @@ func _unhandled_input(ev: InputEvent) -> void:
 	elif ev.is_action_pressed("wyczysc"):
 		swiat.wyczysc()
 		hud.komunikat(tr("TARCZE_WYCZYSZCZONE"))
+	elif ev.is_action_pressed("ekwipunek"):
+		hud.przelacz_ekwipunek()
+	elif ev.is_action_pressed("zrzuc_plecak"):
+		if not Ekwipunek.plecak_p.is_empty():
+			swiat.zrzuc_plecak()
+			hud.komunikat(tr("E_PLECAK_ZRZUCONY"))
 	elif ev.is_action_pressed("uzyj"):
 		var m := swiat.magazynek_w_zasiegu()
+		var poj := swiat.pojemnik_w_zasiegu()
 		if m != null:
-			for b in swiat.bronie:
-				if b.id == m.get("id_broni"):
-					b.oddaj_magazynek(m.get("naboje"))
-			m.queue_free()
+			var p: Dictionary = m.get("przedmiot")
+			if Ekwipunek.podnies(p):
+				hud.komunikat(tr("E_PODNIESIONO") + ": " + tr(Ekwipunek.PRZEDMIOTY[p["id"]]["nazwa"]))
+				m.queue_free()
+			else:
+				hud.komunikat(tr("E_BRAK_MIEJSCA"))
+		elif poj != null:
+			hud.otworz_ekwipunek(poj.get("pojemnik"))
 		else:
 			swiat.uzyj(self)
 	else:

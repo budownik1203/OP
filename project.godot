@@ -15,6 +15,7 @@ Wejscie="*res://skrypty/auto/wejscie.gd"
 Strojenie="*res://skrypty/auto/strojenie.gd"
 Amunicja="*res://skrypty/auto/amunicja.gd"
 Dzwiek="*res://skrypty/auto/dzwiek.gd"
+Ekwipunek="*res://skrypty/auto/ekwipunek.gd"
 
 [display]
 

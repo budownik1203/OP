@@ -85,7 +85,9 @@ func _ready() -> void:
 	Strojenie.zmieniono.connect(func(k): if k == "S_FOV": kamera.fov = Strojenie.w["S_FOV"])
 
 
-func _unhandled_input(ev: InputEvent) -> void:
+## Wejście gracza. Wywoływane z korzenia gry: zdarzenia myszy nie docierają
+## same do węzłów wewnątrz obrazu renderowanego w niskiej rozdzielczości.
+func wejscie(ev: InputEvent) -> void:
 	if not sterowanie or not zdrowie.zyje:
 		return
 	if ev is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -125,7 +127,7 @@ func _physics_process(dt: float) -> void:
 	var na_ziemi := is_on_floor()
 
 	# --- prędkość docelowa ---
-	sprintuje = chce_sprint and wej.y < -0.5 and not kuca and not celuje and wytrz_nogi > 0.08 and na_ziemi and zdrowie.moze_sprintowac()
+	sprintuje = chce_sprint and wej.y < -0.5 and not kuca and not celuje and wytrz_nogi > 0.08 and na_ziemi and zdrowie.moze_sprintowac() and Ekwipunek.moze_sprintowac()
 	var v_max := V_CHOD * tempo
 	if kuca:
 		v_max = V_KUCA * lerpf(0.6, 1.0, tempo)
@@ -135,7 +137,7 @@ func _physics_process(dt: float) -> void:
 		v_max *= 0.62
 	if wej.y > 0.1:
 		v_max *= 0.75
-	v_max *= Strojenie.w["S_RUCH"] * zdrowie.mnoznik_ruchu()
+	v_max *= Strojenie.w["S_RUCH"] * zdrowie.mnoznik_ruchu() * Ekwipunek.mnoznik_ruchu()
 	var kier := (global_transform.basis * Vector3(wej.x, 0.0, wej.y))
 	kier.y = 0.0
 	if kier.length() > 1.0:
@@ -182,10 +184,10 @@ func _physics_process(dt: float) -> void:
 		var poprzednia := krok_faza
 		krok_faza += predkosc_pozioma / dlugosc_kroku * dt * PI
 		if int(poprzednia / PI) != int(krok_faza / PI):
-			var g := clampf(predkosc_pozioma / V_SPRINT, 0.12, 1.0)
+			var g := clampf(predkosc_pozioma / V_SPRINT, 0.12, 1.0) * Ekwipunek.mnoznik_halasu()
 			if kuca:
 				g *= 0.5
-			krok.emit(g)
+			krok.emit(minf(g, 1.6))
 
 	# --- wysokość, wychylenie, kamera ---
 	var cel_wys := WYS_KUCA if kuca else WYS_STOI

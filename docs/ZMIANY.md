@@ -1,5 +1,42 @@
 # Lista zmian
 
+## Build 3 — Ekwipunek (2026-11-11)
+
+**Siatka przedmiotów (Tab)**
+- Kieszenie 4×1, kamizelka 5×2, plecak szturmowy 4×5, relikwiarz 2×2. Pojemność wynika z noszonej kamizelki i plecaka.
+- Przeciąganie myszą, obrót klawiszem R, szybkie przenoszenie Ctrl+klik, wyrzucanie prawym przyciskiem.
+- Podpowiedź po najechaniu: nazwa, waga, stan magazynka „na oko”, nabój na wierzchu.
+- Gra nie zatrzymuje się podczas grzebania w ekwipunku.
+
+**Magazynki i amunicja jako przedmioty**
+- Przeładować można tylko magazynkiem z kamizelki albo kieszeni; magazynki w plecaku się nie liczą.
+- Przy przeładowaniu taktycznym stary magazynek wraca w miejsce, z którego wyjęto nowy.
+- Luźne naboje w paczkach: upuszczenie paczki na magazynek ładuje go po jednym naboju co 0,35 s.
+- Leki są przedmiotami; klawisze 4–8 zużywają je z ekwipunku.
+
+**Waga**
+- Każdy przedmiot waży, naboje też. Do 25 kg bez kary, 25–40 kg rosnące spowolnienie, od 40 kg brak sprintu.
+- Cięższy żołnierz głośniej chodzi.
+- Plecak można zrzucić (Z) i później podnieść razem z zawartością.
+
+**Łup**
+- Pięć skrzyń w kopalni z losową zawartością; zwłoki wrogów też można przeszukać (F).
+- Przeszukiwanie trwa: przedmioty odkrywają się po jednym co 0,7 s.
+- Przedmioty leżące na ziemi podnosi się klawiszem F.
+
+**Ciągłość**
+- Ekwipunek i stan broni (magazynek, nabój w komorze) przechodzą między strzelnicą a kopalnią.
+- Śmierć zabiera wszystko poza relikwiarzem; baza wydaje minimalny przydział.
+
+**Poprawki**
+- Rozglądanie myszą nie działało (zgłoszone przez właściciela). Testy sprawdzają teraz prawdziwe zdarzenia myszy.
+- Elementy pełnoekranowe interfejsu miały zerowy rozmiar.
+
+**Znane braki**
+- Przedmioty to kolorowe kafelki z nazwą, bez ikon.
+- Nie da się jeszcze zamienić noszonej kamizelki ani plecaka na inny przez przeciągnięcie; plecak z łupu zakłada się tylko, gdy własny jest zrzucony.
+- Brak skrytki w bazie; wejdzie w buildzie 4.
+
 ## Build 2 — Pierwszy loch (2026-11-11)
 
 Z bramy za strzelnicą (F) schodzi się do ręcznie ułożonej kopalni. Drabina przy wejściu wyprowadza z powrotem.

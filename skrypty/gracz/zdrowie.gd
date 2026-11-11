@@ -26,7 +26,9 @@ var krwawienie_ciezkie := false
 var zlamania := {}               ## strefa -> true
 var bol := 0.0                   ## 0..1
 var znieczulenie := 0.0          ## sekundy działania środków przeciwbólowych
-var leki := {}
+var leki: Dictionary:
+	get:
+		return Ekwipunek.leki()
 var zyje := true
 var uzywa := ""                  ## lek w trakcie użycia
 var uzycie_t := 0.0
@@ -36,8 +38,6 @@ var uzycie_max := 1.0
 func _ready() -> void:
 	for s in MAKS:
 		hp[s] = MAKS[s]
-	for l in LEKI:
-		leki[l] = LEKI[l][2]
 
 
 ## Cios zadany przez wroga. ciezki: miecz, maczuga — może łamać kości.
@@ -150,7 +150,8 @@ func _potrzebny(lek: String) -> bool:
 
 
 func _zastosuj(lek: String) -> void:
-	leki[lek] -= 1
+	if not Ekwipunek.zuzyj_lek(lek):
+		return
 	match lek:
 		"bandaz":
 			krwawienie_lekkie = maxi(krwawienie_lekkie - 1, 0)
