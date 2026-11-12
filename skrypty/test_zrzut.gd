@@ -50,6 +50,10 @@ func _ready() -> void:
 		set_process(false)
 		_test_ekwipunek.call_deferred()
 		return
+	if "--test-generator" in OS.get_cmdline_user_args():
+		set_process(false)
+		_test_generator.call_deferred()
+		return
 	if "--test-wrogowie" in OS.get_cmdline_user_args():
 		set_process(false)
 		_test_wrogowie.call_deferred()
@@ -1151,4 +1155,59 @@ func _test_wrogowie() -> void:
 		t += 0.25
 	print("włócznik kontra ghul: po ", t, " s włócznik żyje=", wl.zyje, " ghul żyje=", gh3.zyje)
 	print("TEST WROGÓW ZAKOŃCZONY")
+	get_tree().quit()
+
+
+## Generator lochu: moduły mają przejścia, 300 ziaren daje kompletne i przechodnie lochy,
+## to samo ziarno daje ten sam loch, a loch z --ziarno= buduje się w grze.
+func _test_generator() -> void:
+	for m in GeneratorLochu.ZWYKLE + [GeneratorLochu.M_START, GeneratorLochu.M_BIWAK, GeneratorLochu.M_WARSZTAT, GeneratorLochu.M_CHODNIK, GeneratorLochu.M_ARENA]:
+		assert(m.size() == 5)
+		for wiersz in m:
+			assert((wiersz as String).length() == 7)
+		for c in [[3, 0], [3, 4], [0, 2], [6, 2]]:
+			assert((m[c[1]] as String)[c[0]] != "#", "moduł bez przejścia")
+	var rozne := {}
+	var min_w := 99
+	var max_w := 0
+	var z_trollem := 0
+	for ziarno in 300:
+		var u := GeneratorLochu.generuj(ziarno)
+		assert(u.has("mapa") and (u["zyly"] as Array).size() >= 6 and (u["skrzynie"] as Array).size() >= 4)
+		var rudy := {}
+		for z in u["zyly"]:
+			rudy[z[1]] = true
+		assert(rudy.size() == 5, "brak którejś rudy")
+		var sklad := GeneratorLochu.sklad(u["mapa"])
+		assert(sklad.has("troll_stary") and sklad.has("wlocznik") and sklad.has("kusznik"))
+		var ilu := 0
+		for t in sklad:
+			ilu += int(sklad[t])
+		min_w = mini(min_w, ilu)
+		max_w = maxi(max_w, ilu)
+		if sklad.has("troll"):
+			z_trollem += 1
+		rozne["|".join(PackedStringArray(u["mapa"]))] = true
+	print("300 ziaren: różnych układów ", rozne.size(), ", wrogów od ", min_w, " do ", max_w, ", z trollem jaskiniowym ", z_trollem)
+	var a := GeneratorLochu.generuj(4242)
+	var b := GeneratorLochu.generuj(4242)
+	print("to samo ziarno daje ten sam loch: ", a["mapa"] == b["mapa"] and a["zyly"] == b["zyly"])
+	var gra := get_parent()
+	if gra.swiat is Kopalnia:
+		var k: Kopalnia = gra.swiat
+		print("loch w grze: ziarno ", k.ziarno, ", pól ", k.mapa[0].length(), "×", k.mapa.size(), ", wrogów ", k.wrogowie.size(), ", skrzyń ", k.skrzynie_pola.size(), ", żył ", k.zyly_pola.size())
+		for wiersz in k.mapa:
+			print("  ", wiersz)
+		# droga po siatce od zejścia do każdego wyjścia i biwaku
+		for para in [["szyb", k.P_SZYB], ["chodnik", k.P_CHODNIK], ["biwak", k.P_BIWAK], ["piec", k.P_PIEC], ["stół", k.P_STOL]]:
+			var c: Vector2i = para[1]
+			var droga := k.sciezka(k.gracz.global_position, k.call("_srodek", c.x, c.y))
+			print("  droga do: ", para[0], " — ", droga.size(), " punktów")
+		var boss := 0
+		for w in k.wrogowie:
+			if w.typ == "troll_stary":
+				boss += 1
+				print("  boss: tors ", _hp(w, "tors"), " pkt, klasa ", (w.call("_strefa_segmentu", "tors") as StrefaWroga).klasa, ", ", snappedf(w.global_position.distance_to(k.call("_srodek", k.P_SZYB.x, k.P_SZYB.y)), 0.1), " m od szybu")
+		assert(boss == 1)
+	print("TEST GENERATORA ZAKOŃCZONY")
 	get_tree().quit()

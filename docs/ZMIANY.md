@@ -1,5 +1,30 @@
 # Lista zmian
 
+## Wersja 0.1 (build 6c) — Losowe lochy i boss (2026-11-12)
+
+Pierwsza pełna pętla: baza → odprawa → loch złożony na nowo → walka, kopanie, łup → wyjście albo śmierć → pluton i zadania → następna wyprawa.
+
+**Loch losowany co wyprawę**
+- Kopalnia składa się z 9 ręcznie zrobionych modułów (5 stałych ról i 4 z puli 8, odbijanych lustrzanie) połączonych losową siecią przejść z pętlami. Na 300 sprawdzonych ziaren wyszło 300 różnych układów.
+- Każdy loch ma zejście, biwak, piec ze stołem, stary chodnik, szyb za kratą, 8 żył (każda z pięciu rud co najmniej raz) i 6 skrzyń. Generator sprawdza, że do wszystkiego da się dojść.
+- Słabsi wrogowie stoją bliżej zejścia, silniejsi dalej. Straż Zakonu trzyma jeden moduł. W lochu jest 11–16 wrogów, troll jaskiniowy trafia się mniej więcej w połowie wypraw.
+- Zwiad w bazie pokazuje faktyczny skład najbliższego lochu. Biwak wznawia ten sam układ.
+
+**Boss: stary kamienny troll**
+- Pilnuje szybu, czyli wyjścia, które nie zawala się przy Przebudzeniu. Skóra klasy 4, czaszka klasy 5, około 1,7× zdrowia zwykłego trolla, regeneracja zatrzymywana przez 7,62×51 i 12/70.
+- Uderzenie w ziemię rani i wytrąca z równowagi także obok ciosu (do 4,6 m).
+- Zostawia serce trolla, relikwię i klucz do kraty.
+
+**Narzędzia**
+- `--swiat=kopalnia --ziarno=N --test-generator` sprawdza moduły, 300 ziaren i loch zbudowany w grze. Testy bez `--ziarno=` chodzą po dawnej, stałej mapie, żeby wyniki dało się porównywać.
+
+**Znane braki wersji 0.1**
+- Gra nie była uruchomiona na prawdziwej karcie graficznej ani odsłuchana. Wszystkie testy przechodzą bez okna i na programowym rendererze.
+- Serce trolla to na razie tylko cenny łup; nic w bazie go nie wymaga.
+- Jedna lokacja (kopalnia) i jeden poziom. Moduły po kilku wyprawach zaczną się powtarzać.
+- Boss używa modelu trolla w większej skali i ciemniejszej barwie; przy belkach stropu głowa może w nie wchodzić.
+- Liczby (zdrowie, obrażenia, tempo Przebudzenia, gospodarka) ustawione na wyczucie, bez rozegranych wypraw.
+
 ## Build 6b — Wrogowie: modele, animacje, nowe gatunki (2026-11-11)
 
 Druga z trzech części wersji 0.1.

@@ -16,13 +16,14 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
 - Silnik Godot 4.7, modele skryptami w Blenderze. Repozytorium jest źródłem prawdy.
 - Właściciel wymaga jakości docelowej, zwłaszcza modeli i animacji: realistyczne proporcje, żadnej karykatury. Każdy model sprawdzać na renderach przed wejściem do gry.
 - Po każdym buildzie właściciel dostaje paczkę ZIP z projektem do pobrania (`git archive --format=zip --prefix=OstatniPluton-buildN/ HEAD`), wysłaną w rozmowie.
-- Praca bez czekania na właściciela: buildy po kolei aż do wersji 0.1 (build 6), po każdym commit i wpis w `docs/ZMIANY.md`.
+- Praca bez czekania na właściciela: buildy po kolei aż do wersji 0.1 (build 6), po każdym commit i wpis w `docs/ZMIANY.md`. Wersja 0.1 jest gotowa (2026-11-12); dalsze prace po ocenie właściciela.
 
 ## Układ repozytorium
 
 - `skrypty/` — GDScript. Sceny buduje się w kodzie; pliki `.tscn` zawierają tylko korzeń ze skryptem.
 - `skrypty/swiat.gd` — baza każdej lokacji (gracz, ślady, krew, hałas); `strzelnica/`, `kopalnia.gd` to lokacje; `wrogowie/` — wrogowie i strefy trafień; `gracz/zdrowie.gd` — rany i leki.
 - Pluton, zadania w bazie i dodatki do broni są w `skrypty/auto/ekwipunek.gd` (sekcje „pluton” i „dodatki do broni”); panele w `skrypty/ui/hud.gd`.
+- `skrypty/generator_lochu.gd` — składa kopalnię z modułów według `Ekwipunek.ziarno_wyprawy`; `kopalnia.gd` bierze z niego mapę i pozycje. Testy bez `--ziarno=N` używają stałej mapy `MAPA_STALA`.
 - `skrypty/rzemioslo.gd` — receptury pieca i stołu rusznikarskiego; surowce to przedmioty ze stosem (`dane.ile`).
 - `narzedzia/blender/bron_rodzina.py` — pozostała broń; dłonie z `rece.py` (`prawa_karabin`, `lewa_loze`, `prawa_pistolet`, `lewa_pistolet`).
 - `narzedzia/blender/postacie.py` — wspólny szkielet człowieka i warianty wrogów; `postacie2.py` — kaznodzieja, Straż Zakonu, troll, warg.
@@ -56,5 +57,6 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
    `xvfb-run godot --rendering-driver opengl3 -- --zrzut-bron=KATALOG` — każda broń z biodra, w celowaniu i przy strzale.
    `godot --headless -- --swiat=kopalnia --test-loch` — wrogowie, strefy, rozczłonkowanie, ciosy, leki, śmierć.
    `godot --headless -- --swiat=kopalnia --test-wrogowie` — warg, troll, morale Zakonu, kusza, litania, walka frakcji.
+   `godot --headless -- --swiat=kopalnia --ziarno=4242 --test-generator` — moduły, 300 ziaren, loch zbudowany w grze, boss.
    `xvfb-run godot --rendering-driver opengl3 -- --swiat=kopalnia --zrzut-animacje=KATALOG` — klatki animacji wrogów do obejrzenia.
 4. `narzedzia/zrzuty.sh` i obejrzenie zrzutów; nowe modele dodatkowo przez `narzedzia/podglad.sh`.

@@ -56,6 +56,7 @@ const PRZEDMIOTY := {
 	"tlumik_9": {"nazwa": "P_TLUMIK_9", "w": 1, "h": 1, "masa": 0.20, "typ": "dodatek", "kolor": "1f2022", "slot": "wylot", "pasuje": ["jaspis", "gabro"]},
 	"tlumik_kar": {"nazwa": "P_TLUMIK_KAR", "w": 1, "h": 2, "masa": 0.45, "typ": "dodatek", "kolor": "1f2022", "slot": "wylot", "pasuje": ["kwarc", "granit"]},
 	"monety": {"nazwa": "P_MONETY", "w": 1, "h": 1, "masa": 0.15, "typ": "lup", "kolor": "8f7a2e"},
+	"serce_trolla": {"nazwa": "P_SERCE_TROLLA", "w": 2, "h": 2, "masa": 2.4, "typ": "lup", "kolor": "5a6a58"},
 	"relikwia": {"nazwa": "P_RELIKWIA", "w": 1, "h": 2, "masa": 0.60, "typ": "lup", "kolor": "6e5a7a"},
 	"klucz": {"nazwa": "P_KLUCZ", "w": 1, "h": 1, "masa": 0.05, "typ": "lup", "kolor": "5c5f63"},
 	"pas": {"nazwa": "P_PAS", "w": 2, "h": 1, "masa": 0.5, "typ": "kamizelka", "kolor": "4a4a36", "siatka": Vector2i(4, 1)},
@@ -530,7 +531,7 @@ func _stan() -> Dictionary:
 		"relikwiarz": relikwiarz.do_danych(), "skrytka": skrytka.do_danych(),
 		"kamizelka_p": Pojemnik.przedmiot_do_danych(kamizelka_p), "plecak_p": Pojemnik.przedmiot_do_danych(plecak_p),
 		"bron": bron, "sytosc": sytosc, "nawodnienie": nawodnienie, "na_wyprawie": na_wyprawie,
-		"wyprawy": wyprawy, "polegli": polegli, "pluton": pluton, "aktywny": aktywny, "zwiad": zwiad, "raport": raport,
+		"wyprawy": wyprawy, "polegli": polegli, "pluton": pluton, "aktywny": aktywny, "zwiad": zwiad, "raport": raport, "ziarno": ziarno_wyprawy,
 	}
 
 
@@ -556,6 +557,7 @@ func _ustaw_stan(d: Dictionary) -> void:
 		pluton = d["pluton"]
 		aktywny = int(d.get("aktywny", 0))
 	zwiad = bool(d.get("zwiad", false))
+	ziarno_wyprawy = int(d.get("ziarno", randi() % 1000000))
 	raport = d.get("raport", [])
 	ladowanie = {}
 	zmiana.emit()
@@ -700,6 +702,7 @@ const ZADANIA := ["Z_ODPOCZYNEK", "Z_AMUNICJA", "Z_WYTOP", "Z_APROWIZACJA", "Z_Z
 
 var pluton: Array = []          ## {imie, spec, zyje, rany (wyprawy do wyleczenia), wyprawy, zadanie}
 var aktywny := 0                ## kto idzie na wyprawę
+var ziarno_wyprawy := 1          ## z niego składa się loch najbliższej wyprawy; losowane po każdym powrocie i śmierci
 var zwiad := false              ## wynik zwiadu na najbliższą wyprawę
 var raport: Array = []          ## co pluton zrobił podczas ostatniej wyprawy
 
@@ -790,6 +793,7 @@ func _zjedz_ze_skrytki() -> bool:
 ## rany_aktywnego: na ile wypraw wracający żołnierz trafia do lazaretu.
 func rozlicz_wyprawe(rany_aktywnego: int) -> void:
 	raport = []
+	nowy_loch()
 	for i in pluton.size():
 		var z: Dictionary = pluton[i]
 		if not z["zyje"] or i == aktywny:
@@ -857,7 +861,12 @@ func _wykonaj_zadanie(z: Dictionary) -> String:
 
 
 ## Nowa kampania po stracie całego plutonu.
+func nowy_loch() -> void:
+	ziarno_wyprawy = randi() % 1000000
+
+
 func nowa_kampania() -> void:
+	nowy_loch()
 	skrytka = Pojemnik.new(10, 14, "E_SKRYTKA")
 	stan_broni = {}
 	nowy_zestaw()

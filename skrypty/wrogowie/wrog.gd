@@ -155,6 +155,17 @@ const TYPY := {
 		"lup": [], "lup_min": 0, "lup_max": 0,
 		"oprawa": [["kosc", 3, 1.0], ["sciegna", 2, 1.0], ["gruczol", 2, 0.8]],
 	},
+	# boss wersji 0.1: stary kamienny troll pilnuje szybu; uderzenie w ziemię rani też obok
+	"troll_stary": {
+		"model": "res://zasoby/modele/troll.glb", "styl": "ghul", "strefy": STREFY_TROLL, "szczeliny": [], "skala": 1.55,
+		"chod": 0.8, "bieg": 2.2, "zasieg": 3.3, "obr": 92.0, "zamach": 1.15, "po_ataku": 1.3,
+		"ciezki": true, "wzrok": 0.9, "krwawi": true, "oglusza_od": 999.0, "skala_tors": Vector3(0.9, 1, 0.8),
+		"ryk": "troll_ryk", "krok": "krok_ciezki", "zasieg_krokow": 22.0, "oczy": 2.5,
+		"kapsula": Vector2(0.58, 2.7), "regeneracja": 0.03, "ciezki_kaliber": ["7.62x51", "12/70"], "bez_wstrzasu": true,
+		"boss": true, "mnoznik_hp": 1.7, "klasa_plus": 1, "wstrzas_ziemi": 4.6, "barwa": Color(0.62, 0.64, 0.72),
+		"lup": [["serce_trolla", 1], ["relikwia", 1], ["klucz", 1]], "lup_min": 3, "lup_max": 3,
+		"oprawa": [["kosc", 4, 1.0], ["sciegna", 3, 1.0], ["gruczol", 3, 1.0]],
+	},
 	# warg: szybki, zachodzi z boku, ranny ucieka i wraca
 	"warg": {
 		"model": "res://zasoby/modele/warg.glb", "strefy": STREFY_WARG, "szczeliny": [], "cialo": "warg",
@@ -244,7 +255,24 @@ func przygotuj(typ_wroga: String, swiat_: Swiat) -> void:
 				if mat is BaseMaterial3D:
 					(mat as BaseMaterial3D).texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
 	_model.scale = Vector3.ONE * skala
+	if d.has("barwa"):
+		# boss: własne, ciemniejsze kopie materiałów, żeby różnił się od zwykłego trolla
+		for n in _w:
+			if _w[n] is MeshInstance3D:
+				var mi: MeshInstance3D = _w[n]
+				for i in mi.mesh.get_surface_count():
+					var mat := mi.mesh.surface_get_material(i)
+					if mat is StandardMaterial3D:
+						var kopia: StandardMaterial3D = mat.duplicate()
+						kopia.albedo_color = d["barwa"]
+						mi.set_surface_override_material(i, kopia)
 	_zbuduj_strefy()
+	if d.has("mnoznik_hp"):
+		for st in strefy:
+			st.hp_max *= float(d["mnoznik_hp"])
+			st.hp = st.hp_max
+			if st.klasa > 0 and st.klasa < 5:
+				st.klasa += int(d.get("klasa_plus", 0))
 	if _w.has("bron"):
 		(_w["bron"] as Node3D).rotation.x = d.get("bron_obrot", -1.35)
 	floor_snap_length = 0.3
@@ -482,6 +510,8 @@ func _umrzyj(kier: Vector3) -> void:
 	_t_smierc = 0.0
 	_upadl = false
 	_wstrzas = Vector3.ZERO
+	if d.get("boss", false):
+		swiat.komunikat_swiata.emit(tr("BOSS_ZABITY"))
 	if d["krwawi"]:
 		swiat.krew(global_position + Vector3.UP * 0.9, kier, 1.4)
 
@@ -752,6 +782,15 @@ func _physics_process(dt: float) -> void:
 						g.zdrowie.cios(obr, d["ciezki"] and not _bez_broni)
 						g.kopniecie(randf_range(-2.0, 2.0), randf_range(-2.5, 2.5))
 						Dzwiek.przy_uchu("cios", 0.0, 0.1)
+				# uderzenie w ziemię: kto stoi blisko, a nie dostał wprost, i tak obrywa odłamkami i traci równowagę
+				if d.has("wstrzas_ziemi") and cel_wrog == null:
+					var g2 := swiat.gracz
+					var odl_w := g2.global_position.distance_to(global_position)
+					Dzwiek.w_swiecie("cialo_upadek", global_position, 4.0, 0.05, 30.0)
+					if odl_w < float(d["wstrzas_ziemi"]):
+						g2.kopniecie(randf_range(-6.0, 6.0), randf_range(-7.0, -3.0))
+						if not (do_g.length() < float(d["zasieg"]) + 0.25 and przod.dot(do_g.normalized()) > 0.45):
+							g2.zdrowie.cios(float(d["obr"]) * 0.25, false)
 			if _t_stan >= zamach + float(d["po_ataku"]):
 				_ustaw_stan("goni")
 		"ogluszony":

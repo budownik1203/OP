@@ -6,8 +6,8 @@ extends Swiat
 
 const POLE := 3.0
 const WYS := 3.1
-const SKRZYNIE := [Vector2i(20, 1), Vector2i(9, 3), Vector2i(1, 7), Vector2i(11, 9), Vector2i(1, 11)]
-const MAPA := [
+const SKRZYNIE_STALE := [Vector2i(20, 1), Vector2i(9, 3), Vector2i(1, 7), Vector2i(11, 9), Vector2i(1, 11)]
+const MAPA_STALA := [
 	"######################",
 	"#S...#.......#g....#.#",
 	"#.##.#.#####.#.###.#.#",
@@ -25,12 +25,13 @@ const MAPA := [
 
 const ZNAKI_WROGOW := {"g": "ghul", "k": "knecht", "r": "rycerz", "w": "warg", "c": "kultysta",
 	"z": "wlocznik", "x": "kusznik", "K": "komtur", "O": "troll"}
-const P_SZYB := Vector2i(20, 9)       ## wyjście za kratą: wymaga żelaznego klucza
-const P_CHODNIK := Vector2i(1, 9)     ## stary chodnik: zawala się przy Przebudzeniu 50
-const P_BIWAK := Vector2i(7, 7)
-const P_PIEC := Vector2i(18, 3)
-const P_STOL := Vector2i(8, 9)
-const ZYLY := [
+const UKLAD_STALY := {"szyb": Vector2i(20, 9), "chodnik": Vector2i(1, 9), "biwak": Vector2i(7, 7), "piec": Vector2i(18, 3), "stol": Vector2i(8, 9)}
+var P_SZYB := Vector2i(20, 9)       ## wyjście za kratą: wymaga żelaznego klucza
+var P_CHODNIK := Vector2i(1, 9)     ## stary chodnik: zawala się przy Przebudzeniu 50
+var P_BIWAK := Vector2i(7, 7)
+var P_PIEC := Vector2i(18, 3)
+var P_STOL := Vector2i(8, 9)
+const ZYLY_STALE := [
 	[Vector2i(6, 1), "ruda_miedzi"], [Vector2i(12, 1), "ruda_olowiu"], [Vector2i(10, 5), "ruda_zelaza"],
 	[Vector2i(3, 9), "siarka"], [Vector2i(15, 9), "saletra"], [Vector2i(14, 11), "ruda_miedzi"],
 	[Vector2i(5, 11), "ruda_olowiu"], [Vector2i(18, 5), "ruda_zelaza"],
@@ -43,6 +44,10 @@ const PROGI := [
 	[100.0, "BUDZI_4", ["ghul", "warg", "knecht"]],
 ]
 
+var mapa: Array = MAPA_STALA          ## układ tej wyprawy: klasyczny (testy) albo z generatora
+var skrzynie_pola: Array = SKRZYNIE_STALE
+var zyly_pola: Array = ZYLY_STALE
+var ziarno := -1                      ## -1 = układ klasyczny
 var _siatka: AStarGrid2D
 var _start := Vector3.ZERO
 var bez_wrogow := false
@@ -61,6 +66,7 @@ var _los := RandomNumberGenerator.new()
 func _ready() -> void:
 	wyprawa = true
 	_los.randomize()
+	_wybierz_uklad()
 	przygotuj_swiat()
 	_otoczenie()
 	_poziom()
@@ -77,26 +83,60 @@ func _ready() -> void:
 		_wznow(dane_biwaku)
 
 
+## Wyprawa dostaje loch złożony z modułów według ziarna z bazy. Testy i zrzuty bez --ziarno=
+## chodzą po klasycznej, ręcznej mapie, żeby ich wyniki były porównywalne między buildami.
+func _wybierz_uklad() -> void:
+	var z := Ekwipunek.ziarno_wyprawy
+	var test := false
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--test") or a.begins_with("--zrzut"):
+			test = true
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--ziarno="):
+			z = int(a.trim_prefix("--ziarno="))
+			test = false
+	if not dane_biwaku.is_empty() and dane_biwaku.has("ziarno"):
+		z = int(dane_biwaku["ziarno"])
+		test = z < 0
+	if test or z < 0:
+		return
+	var u := GeneratorLochu.generuj(z)
+	ziarno = z
+	mapa = u["mapa"]
+	skrzynie_pola = u["skrzynie"]
+	zyly_pola = u["zyly"]
+	P_SZYB = u["szyb"]
+	P_CHODNIK = u["chodnik"]
+	P_BIWAK = u["biwak"]
+	P_PIEC = u["piec"]
+	P_STOL = u["stol"]
+
+
 func _wyjscia_i_biwak() -> void:
 	var dr := Mat.drewno()
 	var zel := Mat.kolor(Color("26282b"), 0.6, 0.7)
 	# krata szybu
 	var ps := _srodek(P_SZYB.x, P_SZYB.y)
+	var bs := _sciana_przy(P_SZYB)
+	var ws := Vector3(bs.z, 0, bs.x)
+	var obrot_s := atan2(bs.x, bs.z)
 	for i in 6:
-		Mat.blok(self, Vector3(0.05, WYS, 0.05), ps + Vector3(-1.0 + i * 0.4, WYS * 0.5, 1.2), zel, false)
+		Mat.blok(self, Vector3(0.05, WYS, 0.05), ps + bs * 1.2 + ws * (-1.0 + i * 0.4) + Vector3(0, WYS * 0.5, 0), zel, false)
 	for y in [0.5, 1.6, 2.6]:
-		Mat.blok(self, Vector3(2.4, 0.06, 0.06), ps + Vector3(0, y, 1.2), zel, false)
+		Mat.blok(self, Vector3(2.4, 0.06, 0.06), ps + bs * 1.2 + Vector3(0, y, 0), zel, false, Vector3(0, obrot_s, 0))
 	var sw := OmniLight3D.new()
-	sw.position = ps + Vector3(0, 2.4, 0.6)
+	sw.position = ps + bs * 0.6 + Vector3(0, 2.4, 0)
 	sw.light_color = Color(0.55, 0.62, 0.75)
 	sw.light_energy = 0.6
 	sw.omni_range = 5.0
 	add_child(sw)
 	# stary chodnik: pochylnia w górę i blade światło
 	var pc := _srodek(P_CHODNIK.x, P_CHODNIK.y)
-	Mat.blok(self, Vector3(2.2, 0.2, 2.6), pc + Vector3(-0.2, 0.35, 0.9), dr, false, Vector3(deg_to_rad(-22), 0, 0))
+	var bc := _sciana_przy(P_CHODNIK)
+	var wc := Vector3(bc.z, 0, bc.x)
+	Mat.blok(self, Vector3(2.2, 0.2, 2.6), pc + bc * 0.9 + Vector3(0, 0.35, 0), dr, false, Vector3(deg_to_rad(-22), atan2(bc.x, bc.z), 0))
 	var sw2 := OmniLight3D.new()
-	sw2.position = pc + Vector3(0, 2.3, 1.0)
+	sw2.position = pc + bc * 1.0 + Vector3(0, 2.3, 0)
 	sw2.light_color = Color(0.6, 0.66, 0.72)
 	sw2.light_energy = 0.7
 	sw2.omni_range = 5.5
@@ -106,7 +146,7 @@ func _wyjscia_i_biwak() -> void:
 	add_child(_zawal)
 	for i in 9:
 		var r := Vector3(_los.randf_range(0.6, 1.3), _los.randf_range(0.5, 1.1), _los.randf_range(0.6, 1.2))
-		Mat.blok(_zawal, r, pc + Vector3(_los.randf_range(-1.0, 1.0), 0.3 + (i / 3) * 0.7, _los.randf_range(0.2, 1.3)), Mat.skala(), false, Vector3(_los.randf(), _los.randf() * 3.0, _los.randf()))
+		Mat.blok(_zawal, r, pc + wc * _los.randf_range(-1.0, 1.0) + bc * _los.randf_range(0.2, 1.3) + Vector3(0, 0.3 + (i / 3) * 0.7, 0), Mat.skala(), false, Vector3(_los.randf(), _los.randf() * 3.0, _los.randf()))
 	# biwak: palenisko i posłanie
 	var pb := _srodek(P_BIWAK.x, P_BIWAK.y)
 	for i in 6:
@@ -134,7 +174,7 @@ func _sciana_przy(c: Vector2i) -> Vector3:
 
 
 func _zbuduj_zyly() -> void:
-	for z in ZYLY:
+	for z in zyly_pola:
 		var c: Vector2i = z[0]
 		var bok := _sciana_przy(c)
 		var poz := _srodek(c.x, c.y) + bok * 1.38 + Vector3(0, 1.25, 0)
@@ -184,7 +224,7 @@ func stan_do_zapisu() -> Dictionary:
 		skrz.append(s.pojemnik.do_danych())
 	var z := gracz.zdrowie
 	return {
-		"wersja": 1, "przebudzenie": przebudzenie, "prog": prog, "chodnik": chodnik_zawalony,
+		"wersja": 1, "ziarno": ziarno, "przebudzenie": przebudzenie, "prog": prog, "chodnik": chodnik_zawalony,
 		"zywi": zywi, "skrzynie": skrz, "zyly": _zyly.map(func(z): return int(z["ile"])),
 		"zdrowie": {"hp": z.hp.duplicate(), "lekkie": z.krwawienie_lekkie, "ciezkie": z.krwawienie_ciezkie, "zlamania": z.zlamania.duplicate(), "bol": z.bol},
 	}
@@ -236,9 +276,9 @@ func litania(ile: float) -> void:
 func punkt_ucieczki(od: Vector3, przed: Vector3) -> Vector3:
 	var najl := od
 	var najw := -1.0
-	for cz in MAPA.size():
-		for cx in MAPA[0].length():
-			if MAPA[cz][cx] == "#":
+	for cz in mapa.size():
+		for cx in mapa[0].length():
+			if mapa[cz][cx] == "#":
 				continue
 			var p := _srodek(cx, cz)
 			var blisko := p.distance_to(od)
@@ -277,9 +317,9 @@ func _wypusc(typ: String) -> void:
 	if bez_wrogow:
 		return
 	var wolne := []
-	for cz in MAPA.size():
-		for cx in MAPA[0].length():
-			if MAPA[cz][cx] != "#" and _srodek(cx, cz).distance_to(gracz.global_position) > 18.0:
+	for cz in mapa.size():
+		for cx in mapa[0].length():
+			if mapa[cz][cx] != "#" and _srodek(cx, cz).distance_to(gracz.global_position) > 18.0:
 				wolne.append(Vector2i(cx, cz))
 	if wolne.is_empty():
 		return
@@ -313,8 +353,8 @@ func _srodek(cx: int, cz: int) -> Vector3:
 
 
 func _poziom() -> void:
-	var wys := MAPA.size()
-	var szer: int = MAPA[0].length()
+	var wys := mapa.size()
+	var szer: int = mapa[0].length()
 	var skala := Mat.skala()
 	var los := RandomNumberGenerator.new()
 	los.seed = 96
@@ -328,7 +368,7 @@ func _poziom() -> void:
 	Mat.blok(self, Vector3(szer * POLE, 1.0, wys * POLE), Vector3(szer * POLE * 0.5, WYS + 0.5, wys * POLE * 0.5), skala)
 	for cz in wys:
 		for cx in szer:
-			var znak: String = MAPA[cz][cx]
+			var znak: String = mapa[cz][cx]
 			var p := _srodek(cx, cz)
 			if znak == "#":
 				_siatka.set_point_solid(Vector2i(cx, cz), true)
@@ -357,14 +397,14 @@ func _poziom() -> void:
 					_drabina(p)
 				"T":
 					_pochodnia(p, los)
-				"g", "k", "r", "w", "c", "z", "x", "K", "O":
+				"g", "k", "r", "w", "c", "z", "x", "K", "O", "X":
 					if not bez_wrogow:
-						_wrog(ZNAKI_WROGOW[znak], p, los.randf() * TAU)
+						_wrog(GeneratorLochu.ZNAKI_WROGOW[znak], p, los.randf() * TAU)
 	_skrzynie(los)
 
 
 func _skrzynie(los: RandomNumberGenerator) -> void:
-	for c in SKRZYNIE:
+	for c in skrzynie_pola:
 		var p := _srodek(c.x, c.y)
 		var bok := Vector3.ZERO
 		for k in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
@@ -380,9 +420,9 @@ func _skrzynie(los: RandomNumberGenerator) -> void:
 
 
 func _znak(cx: int, cz: int) -> String:
-	if cz < 0 or cz >= MAPA.size() or cx < 0 or cx >= MAPA[0].length():
+	if cz < 0 or cz >= mapa.size() or cx < 0 or cx >= mapa[0].length():
 		return "#"
-	return MAPA[cz][cx]
+	return mapa[cz][cx]
 
 
 func _sasiad_wolny(cx: int, cz: int) -> bool:

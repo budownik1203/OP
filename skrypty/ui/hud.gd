@@ -359,7 +359,7 @@ func _fmt(x: float) -> String:
 
 
 func odswiez() -> void:
-	_wskazowka.text = tr("TYTUL") + " · build 6b · " + tr("PODPOWIEDZ_H")
+	_wskazowka.text = tr("TYTUL") + " · wersja 0.1 · " + tr("PODPOWIEDZ_H")
 	_et_nogi.text = tr("WYTRZ_NOGI")
 	_et_rece.text = tr("WYTRZ_RECE")
 	(_panel_pomoc.find_child("naglowek", true, false) as Label).text = tr("POMOC")
@@ -452,12 +452,13 @@ func otworz_odprawe() -> void:
 	var kto: Dictionary = Ekwipunek.zolnierz()
 	v.add_child(_opis("%s — %s" % [kto["imie"], tr("SPEC_" + String(kto["spec"]))], 19, Color("e6dcc0")))
 	if Ekwipunek.zwiad:
-		var licz := {"g": 0, "k": 0, "r": 0}
-		for wiersz in Kopalnia.MAPA:
-			for znak in wiersz:
-				if licz.has(znak):
-					licz[znak] += 1
-		v.add_child(_opis("%s: %s ×%d, %s ×%d, %s ×%d" % [tr("ZWIAD_WYNIK"), tr("ZW_ghul"), licz["g"], tr("ZW_knecht"), licz["k"], tr("ZW_rycerz"), licz["r"]], 18, Color("9fb0b8")))
+		# zwiad liczy to, co naprawdę czeka w lochu tej wyprawy
+		var sklad := GeneratorLochu.sklad(GeneratorLochu.generuj(Ekwipunek.ziarno_wyprawy)["mapa"])
+		var czesci := PackedStringArray()
+		for typ in ["ghul", "warg", "knecht", "kultysta", "rycerz", "troll", "wlocznik", "kusznik", "komtur", "troll_stary"]:
+			if sklad.has(typ):
+				czesci.append(tr("ZW_" + typ) if typ == "troll_stary" else "%s ×%d" % [tr("ZW_" + typ), sklad[typ]])
+		v.add_child(_opis("%s: %s" % [tr("ZWIAD_WYNIK"), ", ".join(czesci)], 18, Color("9fb0b8")))
 	v.add_child(_opis(tr("ODPRAWA_OPIS")))
 	v.add_child(_opis("%s: %.1f kg" % [tr("E_OBCIAZENIE"), Ekwipunek.masa()]))
 	# wybór broni z plutonowej zbrojowni

@@ -9,7 +9,7 @@ Kolejność od fundamentu w górę. Wersja 0.1 to build 6: pierwsza pełna pętl
 | 3 | Ekwipunek | Siatka, plecaki, kamizelki, magazynki jako przedmioty, waga, skrzynie, przeszukiwanie | gotowy |
 | 4 | Ekstrakcja | Wyjścia, śmierć z utratą sprzętu, skrytka, baza jako menu, Przebudzenie lochu, głód i pragnienie, biwak | gotowy |
 | 5 | Ruda i naboje | Kopanie, oprawianie, piec, stół rusznikarski, składanie naboi, pozostała broń i kalibry | gotowy |
-| 6 | Wersja 0.1 | Losowe składanie lochu z modułów, warg, kultysta, Straż Zakonu, troll, boss, dodatki do broni, pluton i zadania w bazie | w toku: 6a gotowy (pluton, zadania, dodatki), 6b gotowy (wrogowie), 6c losowe lochy i boss |
+| 6 | Wersja 0.1 | Losowe składanie lochu z modułów, warg, kultysta, Straż Zakonu, troll, boss, dodatki do broni, pluton i zadania w bazie | gotowy (6a pluton i dodatki, 6a2 optyka, 6b wrogowie, 6c losowe lochy i boss); czeka na ocenę właściciela |
 | 7 | Krypty i runy | Druga lokacja, zjawy, sól, srebro, ołtarz runiczny, Skażenie | |
 | 8 | Twierdza | Trzecia lokacja, dystans, optyka, karabin wyborowy | |
 | 9 | Kampania | Cel, zakończenie, postęp między kampaniami, bestiariusz, zapis | |
