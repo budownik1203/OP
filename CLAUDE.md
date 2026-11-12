@@ -25,6 +25,8 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
 - `skrypty/swiat.gd` — baza każdej lokacji (gracz, ślady, krew, hałas); `strzelnica/`, `kopalnia.gd` to lokacje; `wrogowie/` — wrogowie i strefy trafień; `gracz/zdrowie.gd` — rany i leki.
 - Pluton, zadania w bazie i dodatki do broni są w `skrypty/auto/ekwipunek.gd` (sekcje „pluton” i „dodatki do broni”); panele w `skrypty/ui/hud.gd`.
 - `skrypty/ui/baza_ui.gd` — ekran bazy 2D (pokazywany, gdy gra nie jest uruchomiona z `--test…`/`--zrzut…`/`--swiat=`; wymusza go `--baza`), `skrypty/ui/modyfikacje_ui.gd` — modyfikacja broni z modelem 3D. Strzelnica 3D nadal ładuje się pod spodem i służy testom.
+- `skrypty/ui/ikony.gd` — ikony przedmiotów (rysunek wektorowy według typu i id) i ikony broni renderowane z modeli. Nowy przedmiot wymaga gałęzi w `Ikony.rysuj`, inaczej dostanie ikonę bryły.
+- Zużycie broni: `Ekwipunek.stan(id)["zuzycie"]`, zacięcia w `Bron._strzal`, naprawa `Ekwipunek.napraw_bron`.
 - `skrypty/generator_lochu.gd` — składa kopalnię z modułów według `Ekwipunek.ziarno_wyprawy`; `kopalnia.gd` bierze z niego mapę i pozycje. Testy bez `--ziarno=N` używają stałej mapy `MAPA_STALA`.
 - `skrypty/rzemioslo.gd` — receptury pieca i stołu rusznikarskiego; surowce to przedmioty ze stosem (`dane.ile`).
 - `narzedzia/blender/bron_rodzina.py` — pozostała broń; dłonie z `rece.py` (`prawa_karabin`, `lewa_loze`, `prawa_pistolet`, `lewa_pistolet`).

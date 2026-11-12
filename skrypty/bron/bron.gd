@@ -150,6 +150,9 @@ var _zamek_t := 0.0
 var _blysk: MeshInstance3D
 var _blysk_swiatlo: OmniLight3D
 var _blysk_t := 0.0
+var _dym: CPUParticles3D
+var zaciecie := false            ## nabój nie wszedł do komory; R usuwa
+var chwyt := false               ## chwyt przedni: mniejszy odrzut, szybsze składanie
 var _latarka: SpotLight3D
 var _okno_r := 0.0
 var _fov_bazowe := 72.0
@@ -169,6 +172,7 @@ func przygotuj(id_broni: String, wlasciciel: Gracz) -> void:
 	if d.has("luneta"):
 		_zbuduj_lunete()
 	_zbuduj_blysk()
+	_zbuduj_dym()
 	_zbuduj_latarke()
 	visible = false
 
@@ -249,6 +253,50 @@ func _zbuduj_blysk() -> void:
 	_blysk_swiatlo.light_energy = 0.0
 	_blysk_swiatlo.position = Vector3(0, 0.02, -0.12)
 	_wylot.add_child(_blysk_swiatlo)
+
+
+## Dym z wylotu: kilka szarych kłębków po każdym strzale, gęstszy przy tłumiku.
+func _zbuduj_dym() -> void:
+	_dym = CPUParticles3D.new()
+	_dym.emitting = false
+	_dym.one_shot = true
+	_dym.amount = 7
+	_dym.lifetime = 1.1
+	_dym.explosiveness = 0.9
+	_dym.local_coords = false
+	_dym.direction = Vector3(0, 0.15, -1)
+	_dym.spread = 22.0
+	_dym.initial_velocity_min = 0.25
+	_dym.initial_velocity_max = 0.9
+	_dym.gravity = Vector3(0, 0.35, 0)
+	_dym.damping_min = 1.2
+	_dym.damping_max = 2.0
+	_dym.scale_amount_min = 0.5
+	_dym.scale_amount_max = 1.2
+	var krzywa := Curve.new()
+	krzywa.add_point(Vector2(0, 0.25))
+	krzywa.add_point(Vector2(1, 1.0))
+	_dym.scale_amount_curve = krzywa
+	var grad := Gradient.new()
+	grad.set_color(0, Color(0.75, 0.74, 0.72, 0.13))
+	grad.set_color(1, Color(0.6, 0.6, 0.6, 0.0))
+	_dym.color_ramp = grad
+	var qm := QuadMesh.new()
+	qm.size = Vector2(0.08, 0.08)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.vertex_color_use_as_albedo = true
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.no_depth_test = false
+	qm.material = mat
+	_dym.mesh = qm
+	_dym.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_wylot.add_child(_dym)
+
+
+func zuzycie() -> float:
+	return float(Ekwipunek.stan(id).get("zuzycie", 0.0))
 
 
 func _zbuduj_latarke() -> void:
@@ -380,6 +428,28 @@ func _zamontuj_dodatki() -> void:
 		s.position = Vector3(0, 0, -dl * 0.5 + 0.02)
 		_ustaw_czesc(s)
 		_wylot.add_child(s)
+	if Ekwipunek.ma_dodatek(id, "chwyt") != "":
+		chwyt = true
+		var pw := _pozycja_w_modelu(_wylot)
+		var ch := MeshInstance3D.new()
+		var cmg := CylinderMesh.new()
+		cmg.top_radius = 0.013
+		cmg.bottom_radius = 0.015
+		cmg.height = 0.085
+		cmg.radial_segments = 8
+		ch.mesh = cmg
+		ch.material_override = metal
+		ch.position = Vector3(0, pw.y - 0.075, pw.z * 0.52)
+		_ustaw_czesc(ch)
+		_model.add_child(ch)
+		var podst := MeshInstance3D.new()
+		var bmg := BoxMesh.new()
+		bmg.size = Vector3(0.022, 0.012, 0.05)
+		podst.mesh = bmg
+		podst.material_override = metal
+		podst.position = Vector3(0, pw.y - 0.030, pw.z * 0.52)
+		_ustaw_czesc(podst)
+		_model.add_child(podst)
 	if Ekwipunek.ma_dodatek(id, "szyna") != "" and d.has("szyna"):
 		kolimator = true
 		var sz: Vector3 = d["szyna"]
@@ -531,7 +601,7 @@ func _obsluz_wejscie(dt: float, steruje: bool) -> void:
 	if test_cel >= 0.0:
 		chce_cel = test_cel > 0.5
 	gracz.celuje = chce_cel and aktywna
-	var szybkosc: float = Strojenie.w["S_CELOWANIE"] / (d["czas_celu"] * (0.85 if kolimator else 1.0))
+	var szybkosc: float = Strojenie.w["S_CELOWANIE"] / (d["czas_celu"] * (0.85 if kolimator else 1.0) * (0.93 if chwyt else 1.0))
 	cel = move_toward(cel, 1.0 if chce_cel else 0.0, dt * szybkosc)
 	if not steruje:
 		return
@@ -549,7 +619,10 @@ func _obsluz_wejscie(dt: float, steruje: bool) -> void:
 		Dzwiek.przy_uchu("klik", -4.0)
 	if Input.is_action_just_pressed("sprawdz_mag") and wolna:
 		_zacznij("sprawdz", 1.5, {0.55: "sprawdz"})
-	if Input.is_action_just_pressed("przeladuj"):
+	if Input.is_action_just_pressed("przeladuj") and wolna and zaciecie:
+		# szarpnięcie zamkiem: zakleszczony nabój wypada, następny wchodzi do komory
+		_zacznij("sprawdz", 1.25, {0.35: "odblokuj"})
+	elif Input.is_action_just_pressed("przeladuj"):
 		if wolna:
 			_stan = "okno_r"
 			_okno_r = 0.28
@@ -559,12 +632,16 @@ func _obsluz_wejscie(dt: float, steruje: bool) -> void:
 		_stan = ""
 	var seria: bool = d["tryby"][tryb] == "TRYB_SERIA"
 	var spust := Input.is_action_pressed("strzal") if seria else Input.is_action_just_pressed("strzal")
-	if spust and wolna and _do_strzalu <= 0.0 and not gracz.sprintuje and zablokowana < 0.35 and _wyjecie >= 1.0:
+	if spust and wolna and zaciecie:
+		if Input.is_action_just_pressed("strzal"):
+			Dzwiek.przy_uchu("suchy", -3.0)
+			komunikat.emit(tr("ZACIECIE"))
+	elif spust and wolna and _do_strzalu <= 0.0 and not gracz.sprintuje and zablokowana < 0.35 and _wyjecie >= 1.0:
 		if komora != "":
 			var odstep: float = 60.0 / d["rpm"]
 			if not seria:
 				_do_strzalu = 0.0
-			while _do_strzalu <= 0.0 and komora != "":
+			while _do_strzalu <= 0.0 and komora != "" and not zaciecie:
 				_strzal()
 				_do_strzalu += odstep
 				if not seria:
@@ -663,6 +740,13 @@ func _stan_krok(dt: float) -> void:
 
 func _zdarzenie(z: String) -> void:
 	match z:
+		"odblokuj":
+			zaciecie = false
+			Dzwiek.przy_uchu("zamek", 0.0, 0.05)
+			_zamek_t = 0.12
+			if komora == "" and mag != null and not mag.is_empty() and not d.has("repetowanie"):
+				komora = mag.pop_back()
+			komunikat.emit(tr("ZACIECIE_USUNIETE"))
 		"mag_wyj", "mag_wyj_s":
 			Dzwiek.przy_uchu("mag_wyj", -3.0)
 			if mag != null:
@@ -738,6 +822,17 @@ func _strzal() -> void:
 	elif mag != null and not mag.is_empty():
 		komora = mag.pop_back()
 	_zamek_t = 0.07
+	# zużycie: każda sztuka amunicji brudzi i wybija mechanizm; zaniedbana broń się zacina
+	var st := Ekwipunek.stan(id)
+	var zuz := minf(float(st.get("zuzycie", 0.0)) + 0.0003 * (1.5 if tlumik else 1.0), 1.0)
+	st["zuzycie"] = zuz
+	if not d.has("repetowanie") and not d.get("rurowy", false) and test_cel < 0.0:
+		var szansa := pow(maxf(zuz - 0.25, 0.0), 2.0) * 0.12
+		if randf() < szansa:
+			zaciecie = true
+			if komora != "":
+				mag.append(komora)
+				komora = ""
 	var dane_a: Dictionary = Amunicja.TYPY[typ]
 	# kierunek = oś lufy + rozrzut własny broni
 	var baza := _wylot.global_transform.basis
@@ -760,7 +855,7 @@ func _strzal() -> void:
 	var postawa := 0.78 if gracz.kuca else 1.0
 	var rece := lerpf(1.4, 1.0, gracz.wytrz_rece)
 	var w_celu := lerpf(1.0, 0.72, cel)
-	var moc := s * postawa * rece * w_celu * Ekwipunek.mod("odrzut") * (0.9 if tlumik else 1.0)
+	var moc := s * postawa * rece * w_celu * Ekwipunek.mod("odrzut") * (0.9 if tlumik else 1.0) * (0.88 if chwyt else 1.0)
 	_odrz_poz.v.z += 0.95 * d["odrzut_tyl"] * moc
 	_odrz_poz.v.y += 0.12 * d["odrzut_pion"] * moc
 	# pierwsze strzały serii kopią najmocniej, potem strzelec „łapie” broń; lufa dryfuje na boki
@@ -773,6 +868,9 @@ func _strzal() -> void:
 	gracz.kopniecie(d["odrzut_kamera"] * postawa * rece, randf_range(-0.35, 0.35) * d["odrzut_bok"])
 	# efekty
 	_blysk_t = 0.0 if tlumik else 0.045
+	_dym.amount = 10 if tlumik else 7
+	_dym.restart()
+	_dym.emitting = true
 	_blysk.rotation.z = randf() * TAU
 	_blysk.scale = Vector3.ONE * randf_range(0.8, 1.25)
 	Dzwiek.przy_uchu(d["dzw_strzal"], -13.0 if tlumik else 0.0, 0.035)

@@ -55,6 +55,7 @@ const PRZEDMIOTY := {
 	"holo": {"nazwa": "P_HOLO", "w": 1, "h": 1, "masa": 0.30, "typ": "dodatek", "kolor": "2a2c30", "slot": "szyna", "pasuje": ["kwarc", "granit", "gabro"]},
 	"tlumik_9": {"nazwa": "P_TLUMIK_9", "w": 1, "h": 1, "masa": 0.20, "typ": "dodatek", "kolor": "1f2022", "slot": "wylot", "pasuje": ["jaspis", "gabro"]},
 	"tlumik_kar": {"nazwa": "P_TLUMIK_KAR", "w": 1, "h": 2, "masa": 0.45, "typ": "dodatek", "kolor": "1f2022", "slot": "wylot", "pasuje": ["kwarc", "granit"]},
+	"chwyt_przedni": {"nazwa": "P_CHWYT", "w": 1, "h": 1, "masa": 0.11, "typ": "dodatek", "kolor": "26282b", "slot": "chwyt", "pasuje": ["kwarc", "granit", "gabro"]},
 	"monety": {"nazwa": "P_MONETY", "w": 1, "h": 1, "masa": 0.15, "typ": "lup", "kolor": "8f7a2e"},
 	"serce_trolla": {"nazwa": "P_SERCE_TROLLA", "w": 2, "h": 2, "masa": 2.4, "typ": "lup", "kolor": "5a6a58"},
 	"relikwia": {"nazwa": "P_RELIKWIA", "w": 1, "h": 2, "masa": 0.60, "typ": "lup", "kolor": "6e5a7a"},
@@ -123,6 +124,7 @@ func _zapas_startowy() -> void:
 	skrytka.wloz_gdziekolwiek(nowa_paczka("paczka_9", "A_9_HP"))
 	skrytka.wloz_gdziekolwiek(nowy("kilof"))
 	skrytka.wloz_gdziekolwiek(nowy("kolimator"))
+	skrytka.wloz_gdziekolwiek(nowy("chwyt_przedni"))
 	skrytka.wloz_gdziekolwiek(nowy("holo"))
 	skrytka.wloz_gdziekolwiek(nowy("tlumik_9"))
 	for id in ["konserwa", "konserwa", "suchary", "suchary", "racja"]:
@@ -913,3 +915,18 @@ func zdejmij(id_broni: String, id_dodatku: String) -> void:
 	if not skrytka.wloz_gdziekolwiek(nowy(id_dodatku)):
 		podnies(nowy(id_dodatku))
 	zmiana.emit()
+
+
+## Stan techniczny broni 0..1 (1 = jak nowa). Zużycie rośnie z każdym strzałem.
+func stan_techniczny(id_broni: String) -> float:
+	return 1.0 - float(stan(id_broni).get("zuzycie", 0.0))
+
+
+## Naprawa w bazie: wymiana zużytych części kosztuje sztabkę stali ze skrytki.
+func napraw_bron(id_broni: String) -> bool:
+	if stan_techniczny(id_broni) >= 0.995 or ile_zasobu("sztabka_stali", true) <= 0:
+		return false
+	zuzyj_zasob("sztabka_stali", 1, true)
+	stan(id_broni)["zuzycie"] = 0.0
+	zmiana.emit()
+	return true

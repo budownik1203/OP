@@ -1,5 +1,26 @@
 # Lista zmian
 
+## Build 7b — Ikony, zużycie broni i zacięcia, chwyt przedni (2026-11-12)
+
+**Ikony**
+- Każdy przedmiot w siatce ma własną ikonę rysowaną wektorowo: magazynki z paskiem załadowania, naboje, leki, jedzenie, manierki, plecaki, kamizelki, rudy, sztabki, łuski, dodatki, łup.
+- Sloty broni pokazują profil broni wyrenderowany z modelu 3D.
+- Pola mają krótkie podpisy: magazynek nazwą broni, paczka naboi kalibrem.
+
+**Broń**
+- Zużycie: każdy strzał zużywa broń (z tłumikiem szybciej). Poniżej 75% stanu broń zaczyna się zacinać, przy 5% zacina się mniej więcej co 16 strzałów. Nowa broń nie zacina się wcale.
+- Zacięcie: spust daje suchy trzask i komunikat, R szarpie zamkiem i wprowadza następny nabój.
+- Naprawa w bazie na ekranie modyfikacji kosztuje sztabkę stali.
+- Nowy dodatek: chwyt przedni (odrzut −12%, składanie do strzału −7%), trzecie gniazdo na ekranie modyfikacji.
+- Ekran modyfikacji pokazuje liczby: odrzut, czas składania, rozrzut, masa, huk, stan techniczny.
+- Dym z wylotu po strzale, gęstszy z tłumikiem.
+
+**Znane braki**
+- Ikony przedmiotów są schematyczne (rysunek wektorowy), nie renderowane z modeli, bo przedmioty poza bronią nie mają modeli 3D.
+- Zacięcie nie ma własnej animacji rąk; używa ruchu sprawdzania magazynka.
+- Dymu i tempa zużycia nie widziałem w ruchu; liczby ustawione na wyczucie.
+- Modele broni i rąk bez zmian: czekają na zdjęcia wzorcowe.
+
 ## Build 7a — Baza jako interfejs 2D, ekwipunek ze slotami, modyfikacja broni (2026-11-12)
 
 Na prośbę właściciela: baza przestaje być lokacją 3D, a ekwipunek i modyfikacja broni idą wzorem Tarkova.

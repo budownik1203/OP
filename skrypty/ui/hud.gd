@@ -77,6 +77,7 @@ func przygotuj(g: Node) -> void:
 	modyfikacje.hud = self
 	_korzen.add_child(modyfikacje)
 	_komunikat.z_index = 50
+	Ikony.przygotuj_bron(self)
 	_zbuduj_pomoc()
 	_zbuduj_strojenie()
 	odswiez()
@@ -370,7 +371,7 @@ func _fmt(x: float) -> String:
 
 
 func odswiez() -> void:
-	_wskazowka.text = tr("TYTUL") + " · 0.1 / build 7a · " + tr("PODPOWIEDZ_H")
+	_wskazowka.text = tr("TYTUL") + " · 0.1 / build 7b · " + tr("PODPOWIEDZ_H")
 	_et_nogi.text = tr("WYTRZ_NOGI")
 	_et_rece.text = tr("WYTRZ_RECE")
 	(_panel_pomoc.find_child("naglowek", true, false) as Label).text = tr("POMOC")

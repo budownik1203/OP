@@ -137,8 +137,8 @@ func _draw() -> void:
 	var y := 240.0
 	var glowna := Ekwipunek.bron_glowna
 	var boczna := Ekwipunek.bron_boczna
-	for sl in [["glowna", "K_NA_PASIE", tr(Bron.DANE[glowna]["nazwa"]), _opis_broni(glowna), 96.0],
-			["boczna", "K_KABURA", tr(Bron.DANE[boczna]["nazwa"]), _opis_broni(boczna), 80.0],
+	for sl in [["glowna", "K_NA_PASIE", tr(Bron.DANE[glowna]["nazwa"]), _opis_broni(glowna), 150.0],
+			["boczna", "K_KABURA", tr(Bron.DANE[boczna]["nazwa"]), _opis_broni(boczna), 132.0],
 			["kamizelka", "E_KAMIZELKA", tr(Ekwipunek.PRZEDMIOTY[Ekwipunek.kamizelka_p["id"]]["nazwa"]), "", 64.0],
 			["plecak", "E_PLECAK", tr(Ekwipunek.PRZEDMIOTY[Ekwipunek.plecak_p["id"]]["nazwa"]) if not Ekwipunek.plecak_p.is_empty() else tr("E_PLECAK_BRAK"), "", 64.0]]:
 		var r := Rect2(60, y, 320, sl[4])
@@ -149,6 +149,10 @@ func _draw() -> void:
 		_tekst(r.position + Vector2(10, 46), sl[2], 20, Color("e6dcc0"), 300)
 		if sl[3] != "":
 			_tekst(r.position + Vector2(10, 68), sl[3], 14, Color("9fb0b8"), 300)
+		var id_b: String = glowna if sl[0] == "glowna" else (boczna if sl[0] == "boczna" else "")
+		if id_b != "" and Ikony.bron.has(id_b):
+			var wys := float(sl[4]) - 80.0
+			draw_texture_rect(Ikony.bron[id_b], Rect2(r.position + Vector2((r.size.x - wys * 2.5) * 0.5, 74), Vector2(wys * 2.5, wys)), false)
 		_sloty.append({"rodzaj": sl[0], "rect": r})
 		y += float(sl[4]) + 10.0
 	# siatki
@@ -196,18 +200,14 @@ func _rysuj_przedmiot(p: Dictionary, r: Rect2, alfa := 1.0) -> void:
 		_tekst(r.position + Vector2(r.size.x * 0.5 - 6, r.size.y * 0.5 + 8), "?", 24, Color("5c574a"))
 		return
 	var def: Dictionary = Ekwipunek.PRZEDMIOTY[p["id"]]
-	var kolor := Color(def["kolor"])
-	kolor.a = alfa
-	draw_rect(r, kolor)
-	draw_rect(r, kolor.lightened(0.35), false, 2.0)
+	Ikony.rysuj(self, p, r, alfa)
+	# krótka nazwa u góry pola: pierwsze słowo, które mówi, co to jest
 	var nazwa := tr(def["nazwa"])
-	var slowa := nazwa.split(" ")
-	var yy := 15.0
-	for s in slowa:
-		if yy > r.size.y - 4:
-			break
-		_tekst(r.position + Vector2(3, yy), s, 11, Color(0.93, 0.9, 0.82, alfa), r.size.x - 4)
-		yy += 13.0
+	if def["typ"] == "mag":
+		nazwa = String(def["bron"]).capitalize()
+	elif def["typ"] == "amunicja":
+		nazwa = String(def["kaliber"]).replace("x", "×")
+	_tekst(r.position + Vector2(3, 12), nazwa, 10, Color(0.86, 0.84, 0.76, alfa), r.size.x - 5)
 	if p["dane"].has("ile"):
 		_tekst(r.position + Vector2(4, r.size.y - 5), "×%d" % int(p["dane"]["ile"]), 13, Color(1, 0.95, 0.7, alfa))
 	if p["dane"].has("porcje"):
@@ -353,6 +353,7 @@ func _linie_broni(id: String) -> PackedStringArray:
 	for x in Ekwipunek.dodatki(id):
 		dod.append(tr(Ekwipunek.PRZEDMIOTY[x]["nazwa"]))
 	l.append("%s: %s" % [tr("K_DODATKI"), ", ".join(dod) if not dod.is_empty() else "—"])
+	l.append("%s: %d%%" % [tr("M_STAN"), roundi(Ekwipunek.stan_techniczny(id) * 100.0)])
 	for b in gra.swiat.bronie:
 		if b.id == id:
 			l.append(tr("BRAK_MAG") if b.mag_p.is_empty() else Ekwipunek.opis_magazynka(b.mag_p))

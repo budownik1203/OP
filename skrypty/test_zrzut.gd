@@ -1226,7 +1226,7 @@ func _zrzuty_bazy() -> void:
 	var hud: Hud = gra.hud
 	await _klatki(20)
 	assert(hud.baza.visible, "ekran bazy powinien być widoczny po starcie")
-	for id in ["holo", "kolimator", "tlumik_kar", "tlumik_9"]:
+	for id in ["holo", "kolimator", "tlumik_kar", "tlumik_9", "chwyt_przedni"]:
 		Ekwipunek.skrytka.wloz_gdziekolwiek(Ekwipunek.nowy(id))
 	Ekwipunek.zwiad = true
 	hud.baza.odswiez()
@@ -1272,7 +1272,7 @@ func _zrzuty_bazy() -> void:
 	await _klatki(8)
 	await _zapisz("45_modyfikacje_puste")
 	var m: ModyfikacjeUI = hud.modyfikacje
-	for slot in ["szyna", "wylot"]:
+	for slot in ["szyna", "wylot", "chwyt"]:
 		var opcje: Array = m.get("_opcje")[slot]
 		if opcje.size() > 1:
 			m.call("_wybrano", slot, 1)
@@ -1287,6 +1287,32 @@ func _zrzuty_bazy() -> void:
 	assert(hud.baza.visible and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE)
 	gra.na_strzelnice()
 	await _klatki(30)
+	# zużycie i zacięcia: zaniedbana broń zacina się, R usuwa zacięcie, naprawa w bazie zeruje zużycie
+	var b: Bron = gra.swiat.bron()
+	Ekwipunek.stan(b.id)["zuzycie"] = 0.95
+	var zaciec := 0
+	var strzalow := 0
+	for i in 400:
+		if b.komora == "" and not b.zaciecie:
+			b.komora = "A_556_FMJ"
+		if b.zaciecie:
+			zaciec += 1
+			b.call("_zdarzenie", "odblokuj")
+			continue
+		b.call("_strzal")
+		strzalow += 1
+	Ekwipunek.stan(b.id)["zuzycie"] = 0.0
+	var czysta := 0
+	for i in 300:
+		b.komora = "A_556_FMJ"
+		b.call("_strzal")
+		if b.zaciecie:
+			czysta += 1
+			b.zaciecie = false
+	print("zużyta broń (5% stanu): ", zaciec, " zacięć na ", strzalow, " strzałów; nowa broń: ", czysta, " na 300; zużycie po 300 strzałach z tłumikiem: ", snappedf(b.zuzycie(), 0.001))
+	Ekwipunek.stan(b.id)["zuzycie"] = 0.6
+	Ekwipunek.dodaj_zasob("sztabka_stali", 1, true)
+	print("naprawa: ", Ekwipunek.napraw_bron(b.id), " stan po naprawie ", Ekwipunek.stan_techniczny(b.id), " chwyt=", b.chwyt)
 	print("strzelnica: baza widoczna=", hud.baza.visible, " broń z dodatkami: tłumik=", gra.swiat.bron().tlumik, " kolimator=", gra.swiat.bron().kolimator)
 	await _zapisz("48_strzelnica")
 	print("ZRZUTY BAZY ZAPISANE")

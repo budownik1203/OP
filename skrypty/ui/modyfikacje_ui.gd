@@ -3,7 +3,7 @@ extends Control
 ## Modyfikacja broni: obracany model 3D i okienka gniazd z listą posiadanych dodatków,
 ## połączone liniami z miejscem montażu.
 
-const GNIAZDA := [["szyna", "M_CELOWNIK"], ["wylot", "M_WYLOT"]]
+const GNIAZDA := [["szyna", "M_CELOWNIK"], ["wylot", "M_WYLOT"], ["chwyt", "M_CHWYT"]]
 
 var hud: Hud
 var id_broni := ""
@@ -18,6 +18,7 @@ var _opcje := {}                  ## slot -> Array (id dodatku albo "")
 var _tytul: Label
 var _dane: Label
 var _wybor: OptionButton
+var _napraw: Button
 var _obrot := Vector2(-0.10, 1.32)
 var _ciagnie := false
 var _ramka: Rect2
@@ -87,7 +88,16 @@ func _ready() -> void:
 	_dane.add_theme_font_size_override("font_size", 19)
 	_dane.add_theme_color_override("font_color", Color("bdb59c"))
 	add_child(_dane)
-	var pozycje := {"szyna": Vector2(820, 190), "wylot": Vector2(1320, 640)}
+	_napraw = Button.new()
+	_napraw.position = Vector2(1340, 912)
+	_napraw.custom_minimum_size = Vector2(320, 44)
+	_napraw.add_theme_font_size_override("font_size", 19)
+	_napraw.pressed.connect(func():
+		if Ekwipunek.napraw_bron(id_broni):
+			Dzwiek.przy_uchu("zamek", -4.0, 0.1)
+		_zbuduj())
+	add_child(_napraw)
+	var pozycje := {"szyna": Vector2(820, 190), "wylot": Vector2(300, 640), "chwyt": Vector2(700, 760)}
 	for g in GNIAZDA:
 		var okno := PanelContainer.new()
 		var st := StyleBoxFlat.new()
@@ -159,6 +169,22 @@ func _zbuduj() -> void:
 			s.rotation.x = PI * 0.5
 			s.position = Vector3(0, 0, -dl * 0.5 + 0.02)
 			wylot.add_child(s)
+	if wylot != null and _gniazdo_istnieje("chwyt"):
+		var pw: Vector3 = _model.global_transform.affine_inverse() * wylot.global_position
+		var kch := Node3D.new()
+		kch.position = Vector3(0, pw.y - 0.030, pw.z * 0.52)
+		_model.add_child(kch)
+		_punkty["chwyt"] = kch
+		if Ekwipunek.ma_dodatek(id_broni, "chwyt") != "":
+			var ch := MeshInstance3D.new()
+			var cmg := CylinderMesh.new()
+			cmg.top_radius = 0.013
+			cmg.bottom_radius = 0.015
+			cmg.height = 0.085
+			ch.mesh = cmg
+			ch.material_override = metal
+			ch.position = Vector3(0, -0.045, 0)
+			kch.add_child(ch)
 	if d.has("szyna"):
 		var sz: Vector3 = d["szyna"]
 		var k := Node3D.new()
@@ -205,12 +231,30 @@ func _zbuduj() -> void:
 			lista.set_item_text(0, tr("M_BRAK_PASUJACYCH"))
 		lista.selected = 1 if zamontowany != "" else 0
 		_opcje[slot] = opcje
+	# liczby jak na ekranie modyfikacji w Tarkovie: co dodatki zmieniają względem gołej broni
+	var tl := Ekwipunek.ma_dodatek(id_broni, "wylot") != ""
+	var cel := Ekwipunek.ma_dodatek(id_broni, "szyna")
+	var chw := Ekwipunek.ma_dodatek(id_broni, "chwyt") != ""
+	var odrzut := (0.9 if tl else 1.0) * (0.88 if chw else 1.0)
+	var czas: float = float(d["czas_celu"]) * (0.85 if cel != "" else 1.0) * (0.93 if chw else 1.0)
+	var masa: float = d["masa"]
+	for x in Ekwipunek.dodatki(id_broni):
+		masa += float(Ekwipunek.PRZEDMIOTY[x]["masa"])
+	var stan := Ekwipunek.stan_techniczny(id_broni)
 	var linie := PackedStringArray()
 	linie.append("%s: %s" % [tr("M_KALIBER"), d["kaliber"]])
-	linie.append("%s: %s" % [tr("M_HALAS"), tr("M_STLUMIONY") if Ekwipunek.ma_dodatek(id_broni, "wylot") != "" else tr("M_PELNY")])
-	var cel := Ekwipunek.ma_dodatek(id_broni, "szyna")
-	linie.append("%s: %s" % [tr("M_CELOWNIK"), tr(Ekwipunek.PRZEDMIOTY[cel]["nazwa"]) if cel != "" else (tr("M_LUNETA") if d.has("luneta") else tr("M_MECHANICZNE"))])
-	_dane.text = "   ·   ".join(linie) + "\n" + tr("M_PODPOWIEDZ")
+	linie.append("%s: %d%%" % [tr("M_ODRZUT"), roundi(odrzut * 100.0)])
+	linie.append("%s: %.2f s" % [tr("M_SKLADANIE"), czas])
+	linie.append("%s: %.1f MOA" % [tr("M_ROZRZUT"), float(d["rozrzut_moa"])])
+	linie.append("%s: %.2f kg" % [tr("M_MASA"), masa])
+	var linie2 := PackedStringArray()
+	linie2.append("%s: %s" % [tr("M_HALAS"), tr("M_STLUMIONY") if tl else tr("M_PELNY")])
+	linie2.append("%s: %s" % [tr("M_CELOWNIK"), tr(Ekwipunek.PRZEDMIOTY[cel]["nazwa"]) if cel != "" else (tr("M_LUNETA") if d.has("luneta") else tr("M_MECHANICZNE"))])
+	linie2.append("%s: %d%%%s" % [tr("M_STAN"), roundi(stan * 100.0), (" (" + tr("M_ZACINA") + ")") if stan < 0.75 else ""])
+	_dane.text = "   ·   ".join(linie) + "\n" + "   ·   ".join(linie2) + "\n" + tr("M_PODPOWIEDZ")
+	_napraw.text = tr("M_NAPRAW")
+	_napraw.disabled = stan >= 0.995 or Ekwipunek.ile_zasobu("sztabka_stali", true) <= 0
+	_napraw.visible = hud.baza.visible
 
 
 func _gniazdo_istnieje(slot: String) -> bool:
