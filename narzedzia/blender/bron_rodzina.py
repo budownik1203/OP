@@ -117,6 +117,26 @@ def gabro():
     # komora: prostopadłościan z zaokrągloną górą, magazynek w chwycie
     k.profil([(-0.019, -0.038), (0.019, -0.038), (0.020, 0.012), (0.014, 0.024), (-0.014, 0.024), (-0.020, 0.012)], "y", 0.0, 0.250, st)
     k.pudlo((0.0195, 0.070, -0.006), (0.0205, 0.140, 0.014), ciem)               # okno wyrzutowe
+    # szkielet dolny szerszy od pokrywy: wyraźny stopień wzdłuż boku, jak w PM-84P
+    k.pudlo((-0.0215, 0.004, -0.040), (0.0215, 0.236, -0.010), st)
+    # prowadnice zamka: podłużne żebro na obu bokach pokrywy i uchwyty napinania z przodu
+    for sx in (-1, 1):
+        k.pudlo((sx * 0.0200, 0.030, 0.002), (sx * 0.0222, 0.232, 0.008), st)
+        k.pudlo((sx * 0.0205, 0.196, 0.008), (sx * 0.0260, 0.214, 0.020), st)
+        for i in range(4):
+            k.pudlo((sx * 0.0260, 0.198 + i * 0.004, 0.009), (sx * 0.0268, 0.200 + i * 0.004, 0.019), ciem)
+        # osie i nity szkieletu
+        for (yy, zz) in ((0.022, -0.024), (0.128, -0.026), (0.166, -0.022), (0.226, -0.020)):
+            k.walec((sx * 0.0210, yy, zz), (sx * 0.0226, yy, zz), 0.0030, st, n=6, gladki=False)
+    # skrzydełko przełącznika rodzaju ognia (lewa strona) z osią
+    k.walec((-0.0215, 0.106, -0.022), (-0.0245, 0.106, -0.022), 0.0052, st, n=8, gladki=False)
+    k.segment((-0.0240, 0.106, -0.022), (-0.0240, 0.112, -0.004), 0.003, 0.007, 0.003, 0.005, st, gora=(0, 1, 0))
+    # ucho pasa z tyłu i zatrzask kolby
+    k.walec((-0.0215, 0.012, -0.002), (-0.0270, 0.012, -0.002), 0.0062, st, n=8)      # ucho pasa z lewej strony, poza linią celowania
+    k.pudlo((-0.010, -0.006, -0.030), (0.010, 0.004, -0.004), st)
+    # radełkowana nakrętka lufy
+    for i in range(4):
+        k.walec((0, 0.252 + i * 0.006, 0.0), (0, 0.255 + i * 0.006, 0.0), 0.0122, st, n=10, gladki=False)
     k.walec((0, 0.250, 0.0), (0, 0.300, 0.0), 0.0085, st, n=10)                   # lufa
     k.walec((0, 0.292, 0.0), (0, 0.312, 0.0), 0.0110, st, n=10)                   # nakrętka
     k.walec((0, 0.3115, 0.0), (0, 0.3125, 0.0), 0.0048, ciem, n=8, gladki=False)
@@ -133,13 +153,24 @@ def gabro():
     k.walec((-0.019, 0.180, 0.004), (-0.034, 0.180, 0.004), 0.0045, st, n=6)
     k.pudlo((0.020, 0.030, -0.020), (0.023, 0.060, -0.010), st)
     # chwyt pistoletowy z magazynkiem
-    k.profil([(0.116, -0.038), (0.074, -0.038), (0.062, -0.148), (0.104, -0.152), (0.110, -0.090)], "x", -0.0150, 0.0150, pol)
-    k.pudlo((-0.0085, 0.050, -0.072), (0.0085, 0.110, -0.068), st)                # kabłąk
-    k.pudlo((-0.0085, 0.050, -0.072), (0.0085, 0.054, -0.038), st)
-    k.segment((0, 0.074, -0.038), (0, 0.078, -0.058), 0.006, 0.006, 0.005, 0.004, st, gora=(1, 0, 0))
+    # szeroki chwyt z gniazdem magazynka: proste ścianki, pionowe rowki, rozszerzona stopka
+    k.profil([(0.122, -0.038), (0.066, -0.038), (0.058, -0.146), (0.054, -0.156), (0.112, -0.160), (0.114, -0.150), (0.116, -0.090)], "x", -0.0158, 0.0158, pol)
+    for i in range(6):
+        yy = 0.072 + i * 0.0068
+        for sx in (-1, 1):
+            k.segment((sx * 0.0160, yy, -0.052), (sx * 0.0160, yy - 0.006, -0.138), 0.0012, 0.0030, 0.0012, 0.0030, ciem, gora=(0, 1, 0))
+    k.walec((0.0158, 0.104, -0.146), (0.0172, 0.104, -0.146), 0.0034, st, n=6, gladki=False)
+    # duży kabłąk: łuk z trzech odcinków
+    k.pudlo((-0.0085, 0.146, -0.058), (0.0085, 0.150, -0.038), st)
+    k.segment((0, 0.148, -0.058), (0, 0.136, -0.078), 0.017, 0.004, 0.017, 0.004, st, gora=(1, 0, 0))
+    k.pudlo((-0.0085, 0.122, -0.080), (0.0085, 0.138, -0.076), st)
+    k.segment((0, 0.130, -0.038), (0, 0.134, -0.060), 0.006, 0.006, 0.005, 0.004, st, gora=(1, 0, 0))
     # chwyt przedni rozłożony
-    k.pudlo((-0.010, 0.190, -0.050), (0.010, 0.214, -0.038), st)
-    k.segment((0, 0.202, -0.048), (0, 0.206, -0.128), 0.022, 0.024, 0.020, 0.022, pol, gora=(0, 1, 0), boki=6)
+    k.pudlo((-0.011, 0.186, -0.052), (0.011, 0.218, -0.038), st)
+    k.walec((-0.013, 0.202, -0.050), (0.013, 0.202, -0.050), 0.0080, st, n=8)                 # oś zawiasu chwytu
+    k.walec((-0.0145, 0.202, -0.050), (0.0145, 0.202, -0.050), 0.0040, ciem, n=6, gladki=False)
+    k.segment((0, 0.202, -0.052), (0, 0.207, -0.132), 0.024, 0.026, 0.022, 0.030, pol, gora=(0, 1, 0), boki=6)
+    k.pudlo((-0.012, 0.192, -0.138), (0.012, 0.224, -0.130), pol)                              # stopka chwytu
     # kolba wysuwana: dwa pręty i stopka
     for sx in (-1, 1):
         k.walec((sx * 0.016, 0.02, -0.012), (sx * 0.016, -0.215, -0.012), 0.0042, st, n=6)

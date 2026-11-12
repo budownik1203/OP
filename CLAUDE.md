@@ -39,7 +39,7 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
 - `narzedzia/blender/` — skrypty modeli (`python3 kwarc.py` generuje `zasoby/modele/kwarc.glb` i tekstury).
 - `narzedzia/dzwiek/generuj.py` — synteza dźwięków zastępczych.
 - `narzedzia/zrzuty.sh`, `narzedzia/podglad.sh` — zrzuty z gry i rzuty modeli do kontroli jakości.
-- `docs/` — projekt gry, plan buildów, lista zmian.
+- `docs/` — projekt gry, plan buildów, lista zmian; `docs/WZORCE.md` — skąd brać zdjęcia wzorcowe broni i które modele są już według nich przerobione.
 - Gałąź `tools` trzyma binarkę Godota dla Linuksa (do testów bez okna).
 
 ## Konwencje

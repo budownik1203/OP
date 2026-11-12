@@ -9,7 +9,8 @@ w.reset()
 stal = w.material("stal_bron", w.tekstura("stal_bron", ["#383b3f", "#3b3e42", "#3f4347", "#565b60"], skala=7.0, ziarno=1, drobny=0.35, rysy=0.003), 0.5, 0.6)
 polimer = w.material("polimer", w.tekstura("polimer", ["#232427", "#26272a", "#292b2e"], skala=6.0, ziarno=2, drobny=0.4), 0.9)
 guma = w.material("guma", w.tekstura("guma", ["#0f0f10", "#141415"], skala=4.0, ziarno=3, drobny=0.6), 1.0)
-magm = w.material("magazynek", w.tekstura("magazynek", ["#38322a", "#3c352c", "#413a30", "#5c5348"], skala=6.0, ziarno=4, drobny=0.4, rysy=0.004), 0.6)
+magm = w.material("magazynek", w.tekstura("magazynek", ["#4a4a38", "#525240", "#5b5a46", "#6a6952", "#3c3c2e"], skala=6.0, ziarno=4, drobny=0.4, rysy=0.004, progi=[0.2, 0.55, 0.82, 0.95]), 0.45)
+naboje_m = w.material("naboje_w_mag", w.tekstura("naboje_w_mag", ["#6e5a2a", "#7a6430", "#866e36"], skala=14.0, ziarno=6, drobny=0.6), 0.5, 0.4)
 ciemny = w.material("ciemny", w.tekstura("ciemny", ["#040404", "#070707"], ziarno=5), 1.0)
 mr = rece.materialy()
 
@@ -22,8 +23,15 @@ HW = 0.0165
 k.pudlo((-HW, 0.0, -0.045), (HW, 0.262, 0.018), stal)
 # pokrywa komory: przekrój ośmiokątny
 k.profil([(-0.0155, 0.018), (0.0155, 0.018), (0.0155, 0.029), (0.009, 0.0375), (-0.009, 0.0375), (-0.0155, 0.029)], "y", 0.004, 0.258, stal)
-for y in (0.05, 0.075, 0.10):
-    k.pudlo((-0.0095, y, 0.0375), (0.0095, y + 0.008, 0.0395), stal)
+# szyna montażowa na wsporniku nad pokrywą (jak w wz. 96C): niska listwa z zębami
+k.pudlo((-0.0105, 0.018, 0.0375), (0.0105, 0.250, 0.0405), stal)
+for i in range(19):
+    y = 0.022 + i * 0.012
+    k.pudlo((-0.0105, y, 0.0405), (0.0105, y + 0.0062, 0.0438), stal)
+# wspornik szyny: ramię schodzące do osi zawiasu z tyłu i do podstawy celownika z przodu
+k.profil([(0.004, 0.018), (0.030, 0.018), (0.040, 0.0375), (0.004, 0.0375)], "x", -0.0125, -0.0105, stal)
+k.profil([(0.004, 0.018), (0.030, 0.018), (0.040, 0.0375), (0.004, 0.0375)], "x", 0.0105, 0.0125, stal)
+k.pudlo((-0.0125, 0.236, 0.022), (0.0125, 0.262, 0.0405), stal)
 # okno wyrzutowe (ciemne wgłębienie po prawej)
 k.pudlo((HW - 0.0006, 0.118, 0.001), (HW + 0.0004, 0.215, 0.0185), ciemny)
 # nity i oś spustu na boku komory
@@ -46,16 +54,29 @@ k.pudlo((-0.0105, 0.500, -0.012), (0.0105, 0.536, 0.040), stal)
 k.pudlo((-0.006, 0.536, -0.016), (0.006, 0.548, -0.004), stal)   # zaczep pasa
 # łoże dolne
 k.profil([(-0.0215, 0.012), (0.0215, 0.012), (0.0235, -0.008), (0.0165, -0.035), (-0.0165, -0.035), (-0.0235, -0.008)], "y", 0.336, 0.497, polimer)
-for i in range(5):
-    y = 0.350 + i * 0.029
-    k.pudlo((-0.0248, y, -0.028), (-0.0225, y + 0.013, 0.006), polimer)
-    k.pudlo((0.0225, y, -0.028), (0.0248, y + 0.013, 0.006), polimer)
+# szyny boczne i dolna na łożu: listwa z zębami, pod nią rząd okrągłych otworów
+for sx in (-1, 1):
+    k.pudlo((sx * 0.0232, 0.342, -0.006), (sx * 0.0262, 0.492, 0.008), stal)
+    for i in range(12):
+        y = 0.345 + i * 0.0122
+        k.pudlo((sx * 0.0262, y, -0.006), (sx * 0.0284, y + 0.0064, 0.008), stal)
+    for i in range(6):
+        y = 0.356 + i * 0.024
+        k.walec((sx * 0.0200, y, -0.021), (sx * 0.0222, y, -0.021), 0.0052, ciemny, n=8, gladki=False)
+k.pudlo((-0.008, 0.342, -0.0385), (0.008, 0.492, -0.035), stal)
+for i in range(12):
+    y = 0.345 + i * 0.0122
+    k.pudlo((-0.008, y, -0.0408), (0.008, y + 0.0064, -0.0385), stal)
 # nakładka górna
 k.profil([(-0.019, 0.012), (0.019, 0.012), (0.019, 0.034), (0.011, 0.0465), (-0.011, 0.0465), (-0.019, 0.034)], "y", 0.336, 0.497, polimer)
-for i in range(3):
-    y = 0.365 + i * 0.045
-    k.pudlo((-0.0194, y, 0.020), (-0.0186, y + 0.022, 0.028), ciemny)
-    k.pudlo((0.0186, y, 0.020), (0.0194, y + 0.022, 0.028), ciemny)
+for i in range(5):
+    y = 0.360 + i * 0.027
+    for sx in (-1, 1):
+        k.walec((sx * 0.0172, y, 0.026), (sx * 0.0196, y, 0.026), 0.0048, ciemny, n=8, gladki=False)
+k.pudlo((-0.0095, 0.340, 0.0465), (0.0095, 0.494, 0.049), stal)
+for i in range(12):
+    y = 0.343 + i * 0.0124
+    k.pudlo((-0.0095, y, 0.049), (0.0095, y + 0.0064, 0.0518), stal)
 # okucie łoża
 k.pudlo((-0.022, 0.495, -0.030), (0.022, 0.503, 0.036), stal)
 # podstawa muszki z osłonami
@@ -69,8 +90,12 @@ k.pudlo((-0.0017, 0.597, 0.040), (0.0017, 0.601, 0.0535), stal)  # muszka
 k.walec((0, 0.640, 0.0), (0, 0.722, 0.0), 0.0108, stal, n=10)
 k.walec((0, 0.650, 0.0), (0, 0.657, 0.0), 0.0128, stal, n=10)
 k.walec((0, 0.676, 0.0), (0, 0.683, 0.0), 0.0128, stal, n=10)
-for kat_x, kat_z in ((0.0109, 0.0), (-0.0109, 0.0), (0.0, 0.0109)):
-    k.pudlo((kat_x - 0.0025, 0.690, kat_z - 0.0025), (kat_x + 0.0025, 0.716, kat_z + 0.0025), ciemny)
+for kat_x, kat_z in ((0.0109, 0.0), (-0.0109, 0.0), (0.0, 0.0109), (0.0077, 0.0077), (-0.0077, 0.0077)):
+    k.pudlo((kat_x - 0.0021, 0.688, kat_z - 0.0021), (kat_x + 0.0021, 0.700, kat_z + 0.0021), ciemny)
+    k.pudlo((kat_x - 0.0021, 0.704, kat_z - 0.0021), (kat_x + 0.0021, 0.716, kat_z + 0.0021), ciemny)
+# zaczep bagnetu i wycior pod lufą
+k.pudlo((-0.004, 0.560, -0.020), (0.004, 0.584, -0.008), stal)
+k.walec((0, 0.500, -0.0165), (0, 0.640, -0.0165), 0.0026, stal, n=6)
 k.walec((0, 0.7215, 0.0), (0, 0.7225, 0.0), 0.0045, ciemny, n=8, gladki=False)  # otwór lufy
 # kabłąk i język spustowy
 k.pudlo((-0.0085, 0.104, -0.0805), (0.0085, 0.177, -0.0765), stal)
@@ -79,16 +104,32 @@ k.segment((0, 0.132, -0.045), (0, 0.138, -0.068), 0.006, 0.006, 0.005, 0.004, st
 # zatrzask magazynka
 k.pudlo((-0.006, 0.176, -0.066), (0.006, 0.182, -0.045), stal)
 # chwyt pistoletowy
-k.profil([(0.108, -0.045), (0.056, -0.045), (0.020, -0.150), (0.064, -0.156), (0.088, -0.092)], "x", -0.0145, 0.0145, polimer)
+# chwyt ergonomiczny: wybrzuszenie pod dłoń z tyłu, podcięcie pod palce z przodu, stopka
+k.profil([(0.112, -0.045), (0.052, -0.045), (0.040, -0.072), (0.026, -0.112), (0.014, -0.150), (0.022, -0.160),
+          (0.066, -0.164), (0.074, -0.150), (0.080, -0.118), (0.090, -0.086), (0.104, -0.066)], "x", -0.0150, 0.0150, polimer)
+for i in range(4):
+    zz = -0.084 - i * 0.017
+    yy = 0.050 - i * 0.0075
+    for sx in (-1, 1):
+        k.pudlo((sx * 0.0150, yy, zz), (sx * 0.0162, yy + 0.030, zz + 0.006), polimer)
+# dźwignia zwalniania magazynka (łopatka przed kabłąkiem) i selektor po lewej
+k.profil([(0.176, -0.045), (0.184, -0.045), (0.190, -0.074), (0.181, -0.076)], "x", -0.007, 0.007, stal)
+k.pudlo((-HW - 0.0045, 0.086, -0.030), (-HW, 0.100, -0.016), stal)
 # dźwignia bezpiecznika (prawa strona)
 k.pudlo((HW, 0.030, -0.014), (HW + 0.002, 0.150, -0.005), stal)
 k.pudlo((HW + 0.002, 0.136, -0.016), (HW + 0.006, 0.150, -0.003), stal)
-# zawias i kolba rurowa
+# zawias, rura i kolba teleskopowa z poduszką policzkową (wz. 96C)
 k.pudlo((-0.015, -0.022, -0.034), (0.015, 0.0, 0.016), stal)
-k.walec((0, -0.02, 0.006), (0, -0.228, -0.002), 0.0068, stal, n=8)
-k.walec((0, -0.02, -0.024), (0, -0.228, -0.088), 0.0068, stal, n=8)
-k.pudlo((-0.006, -0.130, -0.052), (0.006, -0.118, 0.004), stal)
-k.pudlo((-0.016, -0.247, -0.104), (0.016, -0.226, 0.018), guma)
+k.walec((0, -0.016, -0.004), (0, -0.196, -0.004), 0.0135, stal, n=10)
+k.profil([(-0.060, 0.018), (-0.205, 0.022), (-0.232, 0.016), (-0.232, -0.030), (-0.212, -0.096), (-0.186, -0.100),
+          (-0.150, -0.046), (-0.060, -0.024)], "x", -0.0165, 0.0165, polimer)
+# wybranie w kolbie (lżejsza sylwetka) i żebra regulacji
+k.profil([(-0.172, -0.036), (-0.206, -0.036), (-0.200, -0.074), (-0.186, -0.074)], "x", -0.0170, 0.0170, ciemny)
+for i in range(4):
+    y = -0.078 - i * 0.022
+    k.pudlo((-0.0172, y, -0.022), (0.0172, y + 0.006, -0.016), ciemny)
+# stopka gumowa, lekko skośna
+k.profil([(-0.232, 0.022), (-0.250, 0.018), (-0.246, -0.100), (-0.212, -0.100), (-0.232, -0.030)], "x", -0.0175, 0.0175, guma)
 korpus = k.obiekt(rodzic=korzen)
 
 # ------------------------------------------------------------------ zamek
@@ -99,13 +140,21 @@ z.walec((HW + 0.020, 0.196, 0.010), (HW + 0.030, 0.199, 0.010), 0.0062, stal, n=
 zamek = z.obiekt(rodzic=korzen)
 
 # ------------------------------------------------------------------ magazynek
-m = w.Siatka("magazynek", [magm, stal])
-m.profil([(0.182, -0.030), (0.240, -0.030), (0.240, -0.050), (0.2475, -0.105), (0.262, -0.170), (0.283, -0.232),
-          (0.230, -0.250), (0.208, -0.186), (0.193, -0.115), (0.182, -0.050)], "x", -0.0125, 0.0125, magm)
-for (ya, za, yb, zb) in ((0.203, -0.07, 0.215, -0.13), (0.222, -0.07, 0.236, -0.13), (0.219, -0.145, 0.242, -0.215), (0.238, -0.14, 0.262, -0.21)):
-    m.segment((0.0128, ya, za), (0.0128, yb, zb), 0.0016, 0.008, 0.0016, 0.008, magm, gora=(0, 1, 0))
-    m.segment((-0.0128, ya, za), (-0.0128, yb, zb), 0.0016, 0.008, 0.0016, 0.008, magm, gora=(0, 1, 0))
-m.segment((0, 0.2285, -0.2525), (0, 0.2845, -0.2345), 0.029, 0.006, 0.029, 0.006, magm)
+m = w.Siatka("magazynek", [magm, stal, naboje_m])
+# łukowy magazynek z dymnego polimeru: szeroki, z żebrami usztywniającymi i widocznym słupkiem naboi
+m.profil([(0.180, -0.030), (0.244, -0.030), (0.245, -0.052), (0.252, -0.100), (0.266, -0.150), (0.288, -0.200), (0.304, -0.228),
+          (0.244, -0.258), (0.226, -0.222), (0.208, -0.170), (0.194, -0.112), (0.181, -0.052)], "x", -0.0130, 0.0130, magm)
+for i in range(9):
+    t0 = i / 9.0
+    ya = 0.192 + t0 * 0.050 + t0 * t0 * 0.012
+    za = -0.062 - t0 * 0.165
+    for sx in (-1, 1):
+        m.segment((sx * 0.0134, ya, za), (sx * 0.0134, ya + 0.050 + t0 * 0.004, za - 0.012), 0.0014, 0.0042, 0.0014, 0.0042, magm, gora=(0, 0, 1))
+# słupek naboi prześwitujący przez ściankę (tylna krawędź)
+for sx in (-1, 1):
+    m.segment((sx * 0.0132, 0.190, -0.060), (sx * 0.0132, 0.232, -0.212), 0.0010, 0.010, 0.0010, 0.010, naboje_m, gora=(0, 1, 0))
+m.segment((0, 0.243, -0.2605), (0, 0.305, -0.2295), 0.030, 0.007, 0.030, 0.007, magm)
+m.pudlo((-0.0115, 0.184, -0.030), (0.0115, 0.240, -0.024), stal)
 magazynek = m.obiekt(rodzic=korzen)
 
 # ------------------------------------------------------------------ prawa ręka (chwyt)

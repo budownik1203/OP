@@ -1,5 +1,26 @@
 # Lista zmian
 
+## Build 8 — Modele broni według zdjęć wzorcowych (2026-11-13)
+
+Pierwszy build, w którym modele broni powstały przez porównanie ze zdjęciami pierwowzorów (źródła w `docs/WZORCE.md`).
+
+**Kwarc (wzorzec: Beryl wz. 96C)**
+- Szyna montażowa z zębami na wsporniku nad pokrywą komory.
+- Łoże z szynami bocznymi, dolną i górną oraz rzędami okrągłych otworów.
+- Kolba teleskopowa na rurze, z wybraniem i skośną gumową stopką, zamiast drucianej.
+- Ergonomiczny chwyt z nacięciami, łopatka zwalniania magazynka, selektor.
+- Szerszy, mocniej wygięty magazynek z dymnego polimeru z żebrami i widocznym słupkiem naboi.
+- Tłumik płomieni ze szczelinami, zaczep bagnetu, wycior.
+
+**Gabro (wzorzec: PM-84P Glauberyt)**
+- Szkielet szerszy od pokrywy, prowadnice zamka na bokach, uchwyty napinania, nity, skrzydełko przełącznika.
+- Szeroki chwyt z pionowymi rowkami, duży kabłąk przed chwytem, składany chwyt przedni na zawiasie ze stopką, radełkowana nakrętka lufy.
+
+**Znane braki**
+- Zdjęcia zdobyłem tylko dla dwóch broni. Wikimedia Commons ogranicza liczbę pobrań z mojego środowiska; pozostałe pięć modeli jest bez zmian.
+- Dłonie, animacje przeładowania i dźwięki bez zmian.
+- Ikony broni w ekwipunku renderują się z nowych modeli automatycznie.
+
 ## Build 7b — Ikony, zużycie broni i zacięcia, chwyt przedni (2026-11-12)
 
 **Ikony**
