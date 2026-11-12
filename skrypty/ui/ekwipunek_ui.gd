@@ -2,7 +2,8 @@ class_name EkwipunekUI
 extends Control
 ## Ekran ekwipunku: siatki kieszeni, kamizelki, plecaka i relikwiarza,
 ## a po prawej przeszukiwany pojemnik. Gra się nie zatrzymuje.
-## LPM przeciąga, R obraca, Ctrl+LPM przenosi, PPM wyrzuca.
+## LPM przeciąga, R obraca, Ctrl+LPM przenosi, PPM otwiera menu przedmiotu.
+## Po lewej sloty postaci: broń na pasie, kabura, kamizelka, plecak.
 
 const POLE := 58.0
 const CZAS_ODKRYCIA := 0.7
@@ -16,6 +17,11 @@ var _ciag_start := {}
 var _ciag_obr := false
 var _t_szuk := 0.0
 var _czcionka: Font
+var _sloty: Array = []           ## {rodzaj, rect}
+var _menu: PopupMenu
+var _menu_akcje: Array = []      ## Callable na każdą pozycję menu
+var _info: PanelContainer
+var _info_tekst: Label
 
 
 func _ready() -> void:
@@ -23,6 +29,36 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	_czcionka = ThemeDB.fallback_font
+	_menu = PopupMenu.new()
+	_menu.add_theme_font_size_override("font_size", 19)
+	_menu.id_pressed.connect(func(i: int):
+		if i >= 0 and i < _menu_akcje.size():
+			(_menu_akcje[i] as Callable).call())
+	add_child(_menu)
+	_info = PanelContainer.new()
+	var st := StyleBoxFlat.new()
+	st.bg_color = Color(0.05, 0.055, 0.06, 0.98)
+	st.border_color = Color("8a6f3a")
+	st.set_border_width_all(1)
+	st.set_content_margin_all(18)
+	_info.add_theme_stylebox_override("panel", st)
+	_info.custom_minimum_size = Vector2(440, 0)
+	_info.visible = false
+	add_child(_info)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	_info.add_child(v)
+	_info_tekst = Label.new()
+	_info_tekst.add_theme_font_size_override("font_size", 18)
+	_info_tekst.add_theme_color_override("font_color", Color("d8c9a0"))
+	_info_tekst.custom_minimum_size = Vector2(400, 0)
+	_info_tekst.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(_info_tekst)
+	var zamk := Button.new()
+	zamk.text = "OK"
+	zamk.add_theme_font_size_override("font_size", 18)
+	zamk.pressed.connect(func(): _info.visible = false)
+	v.add_child(zamk)
 
 
 func otworz(pojemnik: Pojemnik = null) -> void:
@@ -35,6 +71,8 @@ func zamknij() -> void:
 	_odloz_ciagniety()
 	Ekwipunek.przerwij_ladowanie()
 	visible = false
+	_info.visible = false
+	_menu.hide()
 	lup = null
 
 
@@ -83,7 +121,7 @@ func _tekst(pos: Vector2, t: String, rozmiar := 18, kolor := Color("d8c9a0"), sz
 
 func _draw() -> void:
 	_uklad()
-	draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.02, 0.025, 0.86))
+	draw_rect(Rect2(Vector2.ZERO, size), Color(0.045, 0.05, 0.055, 1.0) if _w_bazie() else Color(0.02, 0.02, 0.025, 0.86))
 	# lewa kolumna: obciążenie, noszone rzeczy, broń
 	var m := Ekwipunek.masa()
 	var kolor_m := Color("d8c9a0")
@@ -94,18 +132,25 @@ func _draw() -> void:
 	_tekst(Vector2(60, 120), tr("E_EKWIPUNEK"), 30, Color("e6dcc0"))
 	_tekst(Vector2(60, 176), "%s: %.1f kg" % [tr("E_OBCIAZENIE"), m], 22, kolor_m)
 	_tekst(Vector2(60, 204), tr("E_LIMITY"), 15, Color("8f8872"))
-	var y := 262.0
-	_tekst(Vector2(60, y), tr("E_KAMIZELKA") + ":", 16, Color("8f8872"))
-	_tekst(Vector2(60, y + 24), tr(Ekwipunek.PRZEDMIOTY[Ekwipunek.kamizelka_p["id"]]["nazwa"]), 19)
-	y += 70
-	_tekst(Vector2(60, y), tr("E_PLECAK") + ":", 16, Color("8f8872"))
-	_tekst(Vector2(60, y + 24), tr(Ekwipunek.PRZEDMIOTY[Ekwipunek.plecak_p["id"]]["nazwa"]) if not Ekwipunek.plecak_p.is_empty() else tr("E_PLECAK_BRAK"), 19)
-	y += 70
-	for b in gra.swiat.bronie:
-		_tekst(Vector2(60, y), tr(b.d["nazwa"]), 17)
-		var opis := tr("BRAK_MAG") if b.mag_p.is_empty() else Ekwipunek.opis_magazynka(b.mag_p)
-		_tekst(Vector2(60, y + 22), opis, 15, Color("8f8872"))
-		y += 58
+	# sloty postaci
+	_sloty.clear()
+	var y := 240.0
+	var glowna := Ekwipunek.bron_glowna
+	var boczna := Ekwipunek.bron_boczna
+	for sl in [["glowna", "K_NA_PASIE", tr(Bron.DANE[glowna]["nazwa"]), _opis_broni(glowna), 96.0],
+			["boczna", "K_KABURA", tr(Bron.DANE[boczna]["nazwa"]), _opis_broni(boczna), 80.0],
+			["kamizelka", "E_KAMIZELKA", tr(Ekwipunek.PRZEDMIOTY[Ekwipunek.kamizelka_p["id"]]["nazwa"]), "", 64.0],
+			["plecak", "E_PLECAK", tr(Ekwipunek.PRZEDMIOTY[Ekwipunek.plecak_p["id"]]["nazwa"]) if not Ekwipunek.plecak_p.is_empty() else tr("E_PLECAK_BRAK"), "", 64.0]]:
+		var r := Rect2(60, y, 320, sl[4])
+		var najech := r.has_point(get_local_mouse_position())
+		draw_rect(r, Color(0.11, 0.115, 0.125, 0.97) if najech else Color(0.08, 0.085, 0.09, 0.95))
+		draw_rect(r, Color("8a6f3a") if najech else Color(0.25, 0.24, 0.21), false, 1.0)
+		_tekst(r.position + Vector2(10, 20), tr(sl[1]).to_upper(), 13, Color("8f8872"))
+		_tekst(r.position + Vector2(10, 46), sl[2], 20, Color("e6dcc0"), 300)
+		if sl[3] != "":
+			_tekst(r.position + Vector2(10, 68), sl[3], 14, Color("9fb0b8"), 300)
+		_sloty.append({"rodzaj": sl[0], "rect": r})
+		y += float(sl[4]) + 10.0
 	# siatki
 	var najechany := {}
 	var mysz := get_local_mouse_position()
@@ -197,6 +242,160 @@ func _podpowiedz(p: Dictionary, mysz: Vector2) -> void:
 		_tekst(pos + Vector2(10, 24 + i * 22), linie[i], 16, Color("e6dcc0") if i == 0 else Color("bdb59c"))
 
 
+func _opis_broni(id: String) -> String:
+	var cz := PackedStringArray([String(Bron.DANE[id]["kaliber"])])
+	for d in Ekwipunek.dodatki(id):
+		cz.append(tr(Ekwipunek.PRZEDMIOTY[d]["nazwa"]))
+	return " · ".join(cz)
+
+
+func _w_bazie() -> bool:
+	return gra.hud.baza.visible
+
+
+func _pokaz_menu(pozycje: Array, gdzie: Vector2) -> void:
+	_menu.clear()
+	_menu_akcje.clear()
+	for i in pozycje.size():
+		_menu.add_item(pozycje[i][0], i)
+		_menu_akcje.append(pozycje[i][1])
+	_menu.position = Vector2i(get_screen_position() + gdzie)
+	_menu.reset_size()
+	_menu.popup()
+
+
+func _pokaz_info(linie: PackedStringArray, gdzie: Vector2) -> void:
+	_info_tekst.text = "\n".join(linie)
+	_info.position = Vector2(minf(gdzie.x + 20, size.x - 480), minf(gdzie.y, size.y - 360))
+	_info.visible = true
+	_info.reset_size()
+
+
+## Menu przedmiotu jak w Tarkovie: informacje, użycie, dzielenie, rozładowanie, odłożenie.
+func _menu_przedmiotu(p: Dictionary, poj: Pojemnik, gdzie: Vector2) -> void:
+	var def: Dictionary = Ekwipunek.PRZEDMIOTY[p["id"]]
+	var poz := [[tr("K_INFO"), func(): _pokaz_info(_linie_info(p), gdzie)]]
+	if def["typ"] in ["lek", "jedzenie", "picie"]:
+		poz.append([tr("K_UZYJ"), func(): _uzyj(p, poj)])
+	if def["typ"] in ["kamizelka", "plecak"]:
+		poz.append([tr("K_ZALOZ"), func(): _uzyj(p, poj)])
+	if def["typ"] == "dodatek" and _w_bazie():
+		poz.append([tr("K_MODYFIKACJE"), func():
+			var cel: String = Ekwipunek.bron_glowna if Ekwipunek.bron_glowna in def["pasuje"] else (Ekwipunek.bron_boczna if Ekwipunek.bron_boczna in def["pasuje"] else String(def["pasuje"][0]))
+			gra.hud.otworz_modyfikacje(cel)])
+	if int(p["dane"].get("ile", 1)) > 1:
+		poz.append([tr("K_PODZIEL"), func(): _podziel(p, poj)])
+	if p["dane"].has("naboje") and not (p["dane"]["naboje"] as Array).is_empty():
+		poz.append([tr("K_ROZLADUJ"), func(): _rozladuj(p, poj)])
+	if lup != null:
+		if poj == lup:
+			poz.append([tr("K_DO_SIEBIE"), func(): _szybko_przenies(p, poj)])
+		else:
+			poz.append([tr("K_DO_SKRYTKI") if _w_bazie() else tr("E_PRZESZUKAJ").get_slice("] ", 1) + " ←", func(): _szybko_przenies(p, poj)])
+	if not _w_bazie():
+		poz.append([tr("K_WYRZUC"), func(): _wyrzuc(p, poj)])
+	_pokaz_menu(poz, gdzie)
+
+
+func _menu_slotu(rodzaj: String, gdzie: Vector2) -> void:
+	var poz := []
+	if rodzaj == "glowna" or rodzaj == "boczna":
+		var id: String = Ekwipunek.bron_glowna if rodzaj == "glowna" else Ekwipunek.bron_boczna
+		poz.append([tr("K_INFO"), func(): _pokaz_info(_linie_broni(id), gdzie)])
+		if _w_bazie():
+			poz.append([tr("K_MODYFIKACJE"), func(): gra.hud.otworz_modyfikacje(id)])
+			for inna in (Bron.GLOWNE if rodzaj == "glowna" else Bron.BOCZNE):
+				if inna != id:
+					var nowa: String = inna
+					poz.append(["%s: %s" % [tr("K_ZMIEN"), tr(Bron.DANE[nowa]["nazwa"])], func():
+						gra.przezbroj(nowa if rodzaj == "glowna" else Ekwipunek.bron_glowna, nowa if rodzaj == "boczna" else Ekwipunek.bron_boczna, "ekwipunek")])
+	else:
+		var p: Dictionary = Ekwipunek.kamizelka_p if rodzaj == "kamizelka" else Ekwipunek.plecak_p
+		if p.is_empty():
+			return
+		poz.append([tr("K_INFO"), func(): _pokaz_info(_linie_info(p), gdzie)])
+	_pokaz_menu(poz, gdzie)
+
+
+func _linie_info(p: Dictionary) -> PackedStringArray:
+	var def: Dictionary = Ekwipunek.PRZEDMIOTY[p["id"]]
+	var l := PackedStringArray([tr(def["nazwa"]).to_upper(), ""])
+	l.append("%s: %.2f kg" % [tr("K_MASA"), Ekwipunek.masa_przedmiotu(p)])
+	l.append("%s: %d×%d" % [tr("K_ROZMIAR"), def["w"], def["h"]])
+	if p["dane"].has("naboje"):
+		var naboje: Array = p["dane"]["naboje"]
+		l.append("%s (%d/%d)" % [Ekwipunek.opis_magazynka(p), naboje.size(), int(def["poj"])])
+		if not naboje.is_empty():
+			l.append(tr("E_NA_WIERZCHU") + ": " + tr(naboje[-1]))
+	if p["dane"].has("typ") and Amunicja.TYPY.has(p["dane"]["typ"]):
+		var a: Dictionary = Amunicja.TYPY[p["dane"]["typ"]]
+		l.append("%s — %s %d · %s %d" % [tr(p["dane"]["typ"]), tr("OBRAZENIA"), a["obr"], tr("PRZEBICIE").to_lower(), a["przeb"]])
+	if p["dane"].has("ile"):
+		l.append("×%d" % int(p["dane"]["ile"]))
+	if p["dane"].has("porcje"):
+		l.append("%s: %d" % [tr("E_PORCJE"), int(p["dane"]["porcje"])])
+	if def.has("siatka"):
+		l.append("%s: %d×%d" % [tr("E_POJEMNOSC"), def["siatka"].x, def["siatka"].y])
+	if def["typ"] == "dodatek":
+		var bronie := PackedStringArray()
+		for b in def["pasuje"]:
+			bronie.append(tr(Bron.DANE[b]["nazwa"]))
+		l.append("%s: %s" % [tr("K_PASUJE"), ", ".join(bronie)])
+	return l
+
+
+func _linie_broni(id: String) -> PackedStringArray:
+	var d: Dictionary = Bron.DANE[id]
+	var l := PackedStringArray([tr(d["nazwa"]).to_upper(), ""])
+	l.append("%s: %s" % [tr("M_KALIBER"), d["kaliber"]])
+	l.append("%s: %d / min" % [tr("K_SZYBKOSTRZELNOSC"), int(d["rpm"])])
+	var dod := PackedStringArray()
+	for x in Ekwipunek.dodatki(id):
+		dod.append(tr(Ekwipunek.PRZEDMIOTY[x]["nazwa"]))
+	l.append("%s: %s" % [tr("K_DODATKI"), ", ".join(dod) if not dod.is_empty() else "—"])
+	for b in gra.swiat.bronie:
+		if b.id == id:
+			l.append(tr("BRAK_MAG") if b.mag_p.is_empty() else Ekwipunek.opis_magazynka(b.mag_p))
+	return l
+
+
+func _podziel(p: Dictionary, poj: Pojemnik) -> void:
+	var ile := int(p["dane"]["ile"])
+	var pol := ile / 2
+	var nowy := Ekwipunek.nowy(p["id"], p["dane"].duplicate(true))
+	nowy["dane"]["ile"] = pol
+	p["dane"]["ile"] = ile - pol
+	if not poj.wloz_gdziekolwiek(nowy):
+		p["dane"]["ile"] = ile
+		gra.hud.komunikat(tr("E_BRAK_MIEJSCA"))
+	Ekwipunek.zmiana.emit()
+
+
+## Rozładowanie magazynka: naboje wracają do paczek w tym samym pojemniku albo przy żołnierzu.
+func _rozladuj(p: Dictionary, poj: Pojemnik) -> void:
+	var naboje: Array = p["dane"]["naboje"]
+	var licz := {}
+	for n in naboje:
+		licz[n] = int(licz.get(n, 0)) + 1
+	var zostalo := []
+	for typ in licz:
+		var nie_weszlo: int = Ekwipunek.dodaj_naboje(typ, licz[typ], poj == Ekwipunek.skrytka)
+		for i in nie_weszlo:
+			zostalo.append(typ)
+	p["dane"]["naboje"] = zostalo
+	if not zostalo.is_empty():
+		gra.hud.komunikat(tr("E_BRAK_MIEJSCA"))
+	Dzwiek.przy_uchu("klik", -8.0, 0.2)
+	Ekwipunek.zmiana.emit()
+
+
+func _wyrzuc(p: Dictionary, poj: Pojemnik) -> void:
+	poj.usun(p)
+	var g: Gracz = gra.swiat.gracz
+	gra.swiat.upusc(p, g.global_position + Vector3.UP * 1.0 - g.global_transform.basis.z * 0.5, -g.global_transform.basis.z * 1.5)
+	Ekwipunek.zmiana.emit()
+
+
 ## Pole siatki pod kursorem: {poj, pos, x, y} albo {}.
 func _cel_pod_mysza(mysz: Vector2) -> Dictionary:
 	for o in _obszary:
@@ -271,14 +470,17 @@ func _gui_input(ev: InputEvent) -> void:
 			Ekwipunek.zmiana.emit()
 		else:
 			_odloz_ciagniety()
-	elif mb.button_index == MOUSE_BUTTON_RIGHT and mb.pressed and _ciag.is_empty() and not cel.is_empty():
-		var poj: Pojemnik = cel["poj"]
-		var p := poj.na_polu(cel["x"], cel["y"])
-		if not p.is_empty() and p.get("odkryty", true):
-			poj.usun(p)
-			var g: Gracz = gra.swiat.gracz
-			gra.swiat.upusc(p, g.global_position + Vector3.UP * 1.0 - g.global_transform.basis.z * 0.5, -g.global_transform.basis.z * 1.5)
-			Ekwipunek.zmiana.emit()
+	elif mb.button_index == MOUSE_BUTTON_RIGHT and mb.pressed and _ciag.is_empty():
+		_info.visible = false
+		if not cel.is_empty():
+			var poj: Pojemnik = cel["poj"]
+			var p := poj.na_polu(cel["x"], cel["y"])
+			if not p.is_empty() and p.get("odkryty", true):
+				_menu_przedmiotu(p, poj, mb.position)
+		else:
+			for sl in _sloty:
+				if (sl["rect"] as Rect2).has_point(mb.position):
+					_menu_slotu(sl["rodzaj"], mb.position)
 
 
 ## Ctrl+klik: z łupu do siebie, od siebie do łupu, a bez łupu między plecakiem i kamizelką.

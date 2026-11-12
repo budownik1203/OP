@@ -1,5 +1,32 @@
 # Lista zmian
 
+## Build 7a — Baza jako interfejs 2D, ekwipunek ze slotami, modyfikacja broni (2026-11-12)
+
+Na prośbę właściciela: baza przestaje być lokacją 3D, a ekwipunek i modyfikacja broni idą wzorem Tarkova.
+
+**Baza 2D**
+- Gra startuje na ekranie bazy: stanowiska (ekwipunek i skrytka, pluton i zadania, stół rusznikarski, piec, modyfikacja broni, strzelnica, odprawa i wymarsz), żołnierz wyznaczony na wyprawę, stan plutonu, zapasy w skrytce i wynik zwiadu.
+- Trójwymiar zaczyna się po wymarszu. Strzelnica została jako osobne stanowisko do przestrzelania broni; Esc wraca z niej do bazy.
+- Po powrocie z wyprawy i po śmierci żołnierza gra wraca na ekran bazy.
+
+**Ekwipunek**
+- Sloty postaci po lewej: broń na pasie, kabura, kamizelka, plecak.
+- Prawy przycisk myszy otwiera menu przedmiotu: informacje, użyj, załóż, podziel stos, rozładuj magazynek, weź, do skrytki, wyrzuć. Na slocie broni: informacje, modyfikacje, zmiana broni.
+- Okno informacji o przedmiocie i o broni.
+
+**Modyfikacja broni**
+- Panel z obracanym modelem broni i okienkami gniazd (celownik, urządzenie wylotowe) połączonymi liniami z miejscem montażu. Lista pokazuje tylko dodatki, które pluton ma w skrytce albo przy żołnierzu. Zmiana od razu widać na modelu.
+
+**Narzędzia**
+- `--baza --zrzut-baza=KATALOG` robi zrzuty ekranu bazy, menu i modyfikacji oraz sprawdza rozładowanie, podział stosu i montaż.
+
+**Znane braki**
+- Broń nadal nie jest przedmiotem w siatce: wybiera się ją z listy w slocie, nie przeciąga.
+- Przedmioty w siatce to kolorowe pola z nazwą, bez ikon.
+- Gniazda modyfikacji są dwa (celownik, wylot); chwyty, kolby i latarki dojdą razem z nowymi dodatkami.
+- Ekran bazy to lista i tekst, bez ilustracji.
+- Stół rusznikarski, piec, pluton i odprawa otwierają dotychczasowe panele.
+
 ## Wersja 0.1 (build 6c) — Losowe lochy i boss (2026-11-12)
 
 Pierwsza pełna pętla: baza → odprawa → loch złożony na nowo → walka, kopanie, łup → wyjście albo śmierć → pluton i zadania → następna wyprawa.

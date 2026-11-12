@@ -11,6 +11,7 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
 - Broń: własne nazwy na wzór prawdziwych modeli Wojska Polskiego, prawdziwe kalibry.
 - Wrogowie: potwory i ludzie (Straż Zakonu). Brutalność wprost, rozczłonkowanie powiązane ze strefami pancerza.
 - Lochy losowane co wyprawę.
+- Baza jest interfejsem 2D (decyzja z 2026-11-12); trójwymiar zaczyna się po wymarszu. Ekwipunek, menu pod prawym przyciskiem i modyfikacja broni wzorowane na Escape from Tarkov.
 - Języki od początku: polski i angielski. Każdy tekst przez `tr("KLUCZ")`, klucze w `skrypty/auto/jezyk.gd`.
 - Styl: hybryda fasetowa w dwóch gęstościach (świat i potwory 800–2500 trójkątów, broń i ręce 4–8 tys.), małe tekstury bez wygładzania, obraz ok. 540 linii, bez drgania wierzchołków.
 - Silnik Godot 4.7, modele skryptami w Blenderze. Repozytorium jest źródłem prawdy.
@@ -23,6 +24,7 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
 - `skrypty/` — GDScript. Sceny buduje się w kodzie; pliki `.tscn` zawierają tylko korzeń ze skryptem.
 - `skrypty/swiat.gd` — baza każdej lokacji (gracz, ślady, krew, hałas); `strzelnica/`, `kopalnia.gd` to lokacje; `wrogowie/` — wrogowie i strefy trafień; `gracz/zdrowie.gd` — rany i leki.
 - Pluton, zadania w bazie i dodatki do broni są w `skrypty/auto/ekwipunek.gd` (sekcje „pluton” i „dodatki do broni”); panele w `skrypty/ui/hud.gd`.
+- `skrypty/ui/baza_ui.gd` — ekran bazy 2D (pokazywany, gdy gra nie jest uruchomiona z `--test…`/`--zrzut…`/`--swiat=`; wymusza go `--baza`), `skrypty/ui/modyfikacje_ui.gd` — modyfikacja broni z modelem 3D. Strzelnica 3D nadal ładuje się pod spodem i służy testom.
 - `skrypty/generator_lochu.gd` — składa kopalnię z modułów według `Ekwipunek.ziarno_wyprawy`; `kopalnia.gd` bierze z niego mapę i pozycje. Testy bez `--ziarno=N` używają stałej mapy `MAPA_STALA`.
 - `skrypty/rzemioslo.gd` — receptury pieca i stołu rusznikarskiego; surowce to przedmioty ze stosem (`dane.ile`).
 - `narzedzia/blender/bron_rodzina.py` — pozostała broń; dłonie z `rece.py` (`prawa_karabin`, `lewa_loze`, `prawa_pistolet`, `lewa_pistolet`).
@@ -58,5 +60,6 @@ Ten plik czyta każda sesja Claude'a pracująca nad grą. Zawiera decyzje właś
    `godot --headless -- --swiat=kopalnia --test-loch` — wrogowie, strefy, rozczłonkowanie, ciosy, leki, śmierć.
    `godot --headless -- --swiat=kopalnia --test-wrogowie` — warg, troll, morale Zakonu, kusza, litania, walka frakcji.
    `godot --headless -- --swiat=kopalnia --ziarno=4242 --test-generator` — moduły, 300 ziaren, loch zbudowany w grze, boss.
+   `xvfb-run godot --rendering-driver opengl3 -- --baza --zrzut-baza=KATALOG` — ekran bazy, menu przedmiotu, modyfikacja broni.
    `xvfb-run godot --rendering-driver opengl3 -- --swiat=kopalnia --zrzut-animacje=KATALOG` — klatki animacji wrogów do obejrzenia.
 4. `narzedzia/zrzuty.sh` i obejrzenie zrzutów; nowe modele dodatkowo przez `narzedzia/podglad.sh`.

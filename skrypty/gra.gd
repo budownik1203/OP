@@ -24,6 +24,8 @@ var nazwa_swiata := ""
 var _dane_biwaku := {}
 var hud: Hud
 var _mat_obrazu: ShaderMaterial
+var baza_wlaczona := true        ## testy i zrzuty chodzą bez ekranu bazy (chyba że --baza)
+var _prosto_na_strzelnice := false
 
 
 func _ready() -> void:
@@ -47,6 +49,11 @@ func _ready() -> void:
 	hud = Hud.new()
 	add_child(hud)
 	var start := "strzelnica"
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--test") or a.begins_with("--zrzut") or a.begins_with("--swiat="):
+			baza_wlaczona = false
+	if "--baza" in OS.get_cmdline_user_args():
+		baza_wlaczona = true
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--swiat="):
 			start = a.trim_prefix("--swiat=")
@@ -105,7 +112,21 @@ func _zaladuj_swiat(nazwa: String) -> void:
 	z.smierc.connect(_smierc)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	if nazwa == "kopalnia":
+		hud.baza.ukryj()
 		hud.komunikat(tr("KOPALNIA"))
+	elif baza_wlaczona and not _prosto_na_strzelnice:
+		hud.baza.pokaz()
+	else:
+		hud.baza.ukryj()
+	_prosto_na_strzelnice = false
+
+
+## Z ekranu bazy na strzelnicę: lokacja ładuje się od nowa, żeby broń miała aktualne dodatki.
+func na_strzelnice() -> void:
+	hud.zamknij_panele()
+	swiat.bronie.clear()
+	_prosto_na_strzelnice = true
+	_zaladuj_swiat.call_deferred("strzelnica")
 
 
 ## Wyjście z bazy na wyprawę. Od tej chwili zamknięcie gry bez biwaku oznacza stratę żołnierza.
@@ -132,7 +153,9 @@ func przezbroj(glowna: String, boczna: String, potem := "odprawa") -> void:
 	(func():
 		swiat.gracz.global_position = poz
 		swiat.gracz.rotation.y = obr
-		if potem == "stol":
+		if potem == "ekwipunek":
+			hud.otworz_ekwipunek(Ekwipunek.skrytka)
+		elif potem == "stol":
 			hud.otworz_rzemioslo("stol", true)
 		elif potem == "pluton":
 			hud.otworz_pluton()
@@ -187,10 +210,31 @@ func _zastosuj_obraz() -> void:
 
 
 func _unhandled_input(ev: InputEvent) -> void:
+	if hud.baza.visible:
+		# ekran bazy: tylko zamykanie paneli i klawisze ogólne
+		if ev.is_action_pressed("wyjdz"):
+			hud.zamknij_panele()
+		elif ev.is_action_pressed("strojenie"):
+			hud.przelacz_strojenie()
+		elif ev.is_action_pressed("jezyk"):
+			Jezyk.przelacz()
+		elif ev.is_action_pressed("pomoc"):
+			hud.przelacz_pomoc()
+		elif ev.is_action_pressed("ekwipunek"):
+			if hud.ekwipunek.visible:
+				hud.zamknij_panele()
+			elif not hud.panel_otwarty():
+				hud.otworz_ekwipunek(Ekwipunek.skrytka)
+		return
 	if swiat != null and not hud.panel_otwarty():
 		swiat.gracz.wejscie(ev)
 	if ev.is_action_pressed("wyjdz"):
 		if hud.zamknij_panele():
+			return
+		if baza_wlaczona and nazwa_swiata != "kopalnia":
+			for b in swiat.bronie:
+				b.zapisz_stan()
+			hud.baza.pokaz()
 			return
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif ev is InputEventMouseButton and ev.pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not hud.panel_otwarty():

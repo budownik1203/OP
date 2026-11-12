@@ -50,6 +50,12 @@ func _ready() -> void:
 		set_process(false)
 		_test_ekwipunek.call_deferred()
 		return
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--zrzut-baza="):
+			_katalog = a.trim_prefix("--zrzut-baza=")
+			set_process(false)
+			_zrzuty_bazy.call_deferred()
+			return
 	if "--test-generator" in OS.get_cmdline_user_args():
 		set_process(false)
 		_test_generator.call_deferred()
@@ -1210,4 +1216,78 @@ func _test_generator() -> void:
 				print("  boss: tors ", _hp(w, "tors"), " pkt, klasa ", (w.call("_strefa_segmentu", "tors") as StrefaWroga).klasa, ", ", snappedf(w.global_position.distance_to(k.call("_srodek", k.P_SZYB.x, k.P_SZYB.y)), 0.1), " m od szybu")
 		assert(boss == 1)
 	print("TEST GENERATORA ZAKOŃCZONY")
+	get_tree().quit()
+
+
+## Ekran bazy 2D, ekwipunek ze slotami i menu kontekstowym, modyfikacja broni. Uruchamiać z --baza.
+func _zrzuty_bazy() -> void:
+	DirAccess.make_dir_recursive_absolute(_katalog)
+	var gra := get_parent()
+	var hud: Hud = gra.hud
+	await _klatki(20)
+	assert(hud.baza.visible, "ekran bazy powinien być widoczny po starcie")
+	for id in ["holo", "kolimator", "tlumik_kar", "tlumik_9"]:
+		Ekwipunek.skrytka.wloz_gdziekolwiek(Ekwipunek.nowy(id))
+	Ekwipunek.zwiad = true
+	hud.baza.odswiez()
+	await _klatki(5)
+	await _zapisz("40_baza")
+	hud.otworz_ekwipunek(Ekwipunek.skrytka)
+	await _klatki(5)
+	await _zapisz("41_ekwipunek_baza")
+	# menu kontekstowe na pierwszym przedmiocie ze stosem w skrytce
+	var e: EkwipunekUI = hud.ekwipunek
+	var wybrany := {}
+	for p in Ekwipunek.skrytka.rzeczy:
+		if p["dane"].has("naboje") and not (p["dane"]["naboje"] as Array).is_empty():
+			wybrany = p
+			break
+	var obszar := Vector2.ZERO
+	for o in e.get("_obszary"):
+		if o["poj"] == Ekwipunek.skrytka:
+			obszar = o["pos"]
+	var gdzie := obszar + Vector2(wybrany["x"] + 0.5, wybrany["y"] + 0.5) * EkwipunekUI.POLE
+	e.call("_menu_przedmiotu", wybrany, Ekwipunek.skrytka, gdzie)
+	await _klatki(5)
+	await _zapisz("42_menu_przedmiotu")
+	(e.get("_menu") as PopupMenu).hide()
+	var przed: int = (wybrany["dane"]["naboje"] as Array).size()
+	e.call("_rozladuj", wybrany, Ekwipunek.skrytka)
+	print("rozładowanie magazynka: ", przed, " -> ", (wybrany["dane"]["naboje"] as Array).size())
+	for p in Ekwipunek.skrytka.rzeczy:
+		if int(p["dane"].get("ile", 1)) > 1:
+			var ile := int(p["dane"]["ile"])
+			var n0 := Ekwipunek.skrytka.rzeczy.size()
+			e.call("_podziel", p, Ekwipunek.skrytka)
+			print("podział stosu ", ile, " -> ", int(p["dane"]["ile"]), " + nowy stos; przedmiotów ", n0, " -> ", Ekwipunek.skrytka.rzeczy.size())
+			break
+	e.call("_pokaz_info", e.call("_linie_info", wybrany), gdzie)
+	await _klatki(5)
+	await _zapisz("43_informacje")
+	e.call("_menu_slotu", "glowna", Vector2(200, 290))
+	await _klatki(5)
+	await _zapisz("44_menu_broni")
+	(e.get("_menu") as PopupMenu).hide()
+	hud.otworz_modyfikacje(Ekwipunek.bron_glowna)
+	await _klatki(8)
+	await _zapisz("45_modyfikacje_puste")
+	var m: ModyfikacjeUI = hud.modyfikacje
+	for slot in ["szyna", "wylot"]:
+		var opcje: Array = m.get("_opcje")[slot]
+		if opcje.size() > 1:
+			m.call("_wybrano", slot, 1)
+	await _klatki(8)
+	print("dodatki po montażu: ", Ekwipunek.dodatki(Ekwipunek.bron_glowna))
+	await _zapisz("46_modyfikacje_zamontowane")
+	m.set("_obrot", Vector2(-0.5, 2.4))
+	await _klatki(5)
+	await _zapisz("47_modyfikacje_obrot")
+	hud.zamknij_panele()
+	await _klatki(3)
+	assert(hud.baza.visible and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE)
+	gra.na_strzelnice()
+	await _klatki(30)
+	print("strzelnica: baza widoczna=", hud.baza.visible, " broń z dodatkami: tłumik=", gra.swiat.bron().tlumik, " kolimator=", gra.swiat.bron().kolimator)
+	await _zapisz("48_strzelnica")
+	print("ZRZUTY BAZY ZAPISANE")
 	get_tree().quit()

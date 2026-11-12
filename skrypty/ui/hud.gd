@@ -35,6 +35,8 @@ var _luneta: ColorRect
 var _budzenie: Array[ColorRect] = []
 var _panel_odprawa: PanelContainer
 var _panel_biwak: PanelContainer
+var baza: BazaUI
+var modyfikacje: ModyfikacjeUI
 
 
 func przygotuj(g: Node) -> void:
@@ -63,9 +65,18 @@ func przygotuj(g: Node) -> void:
 	_et_rece = _etykieta(15, Color("d8c9a0"))
 	_umiesc(_et_rece, Control.PRESET_BOTTOM_LEFT, 30, -70, 60, 20)
 	_zbuduj_zdrowie()
+	# baza 2D zakrywa widżety gry; ekwipunek, panele i komunikaty rysują się nad nią
+	baza = BazaUI.new()
+	baza.gra = gra
+	baza.hud = self
+	_korzen.add_child(baza)
 	ekwipunek = EkwipunekUI.new()
 	ekwipunek.gra = gra
 	_korzen.add_child(ekwipunek)
+	modyfikacje = ModyfikacjeUI.new()
+	modyfikacje.hud = self
+	_korzen.add_child(modyfikacje)
+	_komunikat.z_index = 50
 	_zbuduj_pomoc()
 	_zbuduj_strojenie()
 	odswiez()
@@ -359,7 +370,7 @@ func _fmt(x: float) -> String:
 
 
 func odswiez() -> void:
-	_wskazowka.text = tr("TYTUL") + " · wersja 0.1 · " + tr("PODPOWIEDZ_H")
+	_wskazowka.text = tr("TYTUL") + " · 0.1 / build 7a · " + tr("PODPOWIEDZ_H")
 	_et_nogi.text = tr("WYTRZ_NOGI")
 	_et_rece.text = tr("WYTRZ_RECE")
 	(_panel_pomoc.find_child("naglowek", true, false) as Label).text = tr("POMOC")
@@ -377,7 +388,7 @@ func komunikat(tekst: String, czas := 2.8) -> void:
 
 
 func panel_otwarty() -> bool:
-	return _panel_stroj.visible or _panel_pomoc.visible or ekwipunek.visible or (_panel_stol != null and _panel_stol.visible) or (_panel_odprawa != null and _panel_odprawa.visible) or (_panel_biwak != null and _panel_biwak.visible) or (_panel_rzem != null and _panel_rzem.visible) or (_panel_pluton != null and _panel_pluton.visible)
+	return _panel_stroj.visible or _panel_pomoc.visible or ekwipunek.visible or modyfikacje.visible or (_panel_stol != null and _panel_stol.visible) or (_panel_odprawa != null and _panel_odprawa.visible) or (_panel_biwak != null and _panel_biwak.visible) or (_panel_rzem != null and _panel_rzem.visible) or (_panel_pluton != null and _panel_pluton.visible)
 
 
 func zamknij_panele() -> bool:
@@ -389,6 +400,7 @@ func zamknij_panele() -> bool:
 	_panel_pomoc.visible = false
 	if ekwipunek.visible:
 		ekwipunek.zamknij()
+	modyfikacje.visible = false
 	if _panel_stol:
 		_panel_stol.visible = false
 	if _panel_odprawa:
@@ -404,8 +416,21 @@ func zamknij_panele() -> bool:
 
 
 func _wroc_do_gry() -> void:
+	if baza.visible:
+		# w bazie nie ma do czego wracać: zostaje kursor i ekran bazy
+		gra.swiat.gracz.sterowanie = false
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		baza.odswiez()
+		return
 	gra.swiat.gracz.sterowanie = true
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+func otworz_modyfikacje(id_broni: String) -> void:
+	zamknij_panele()
+	modyfikacje.otworz(id_broni)
+	gra.swiat.gracz.sterowanie = false
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
 func _otworz(p: PanelContainer) -> void:
